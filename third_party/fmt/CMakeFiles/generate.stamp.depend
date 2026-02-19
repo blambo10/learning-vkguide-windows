@@ -1,0 +1,16 @@
+# CMake generation dependency list for this directory.
+C:/Users/blamb/repos/vulkan-guide/third_party/fmt/CMakeLists.txt
+C:/Users/blamb/repos/vulkan-guide/third_party/fmt/support/cmake/JoinPaths.cmake
+C:/Users/blamb/repos/vulkan-guide/third_party/fmt/support/cmake/fmt-config.cmake.in
+C:/Users/blamb/repos/vulkan-guide/third_party/fmt/support/cmake/fmt.pc.in
+D:/Dev/Tools/Cmake/share/cmake-4.2/Modules/BasicConfigVersion-AnyNewerVersion.cmake.in
+D:/Dev/Tools/Cmake/share/cmake-4.2/Modules/CMakeCheckCompilerFlagCommonPatterns.cmake
+D:/Dev/Tools/Cmake/share/cmake-4.2/Modules/CMakePackageConfigHelpers.cmake
+D:/Dev/Tools/Cmake/share/cmake-4.2/Modules/CMakeParseArguments.cmake
+D:/Dev/Tools/Cmake/share/cmake-4.2/Modules/CheckCXXCompilerFlag.cmake
+D:/Dev/Tools/Cmake/share/cmake-4.2/Modules/CheckCXXSourceCompiles.cmake
+D:/Dev/Tools/Cmake/share/cmake-4.2/Modules/GNUInstallDirs.cmake
+D:/Dev/Tools/Cmake/share/cmake-4.2/Modules/Internal/CheckCompilerFlag.cmake
+D:/Dev/Tools/Cmake/share/cmake-4.2/Modules/Internal/CheckFlagCommonConfig.cmake
+D:/Dev/Tools/Cmake/share/cmake-4.2/Modules/Internal/CheckSourceCompiles.cmake
+D:/Dev/Tools/Cmake/share/cmake-4.2/Modules/WriteBasicConfigVersionFile.cmake

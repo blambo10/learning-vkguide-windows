@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="18.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\blamb\repos\vulkan-guide\build\CMakeFiles\dd5852210a23ff8a89ce9e193055042e\gradient.comp.spv.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\blamb\repos\vulkan-guide\build\CMakeFiles\dd5852210a23ff8a89ce9e193055042e\gradient_color.comp.spv.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\blamb\repos\vulkan-guide\build\CMakeFiles\dd5852210a23ff8a89ce9e193055042e\sky.comp.spv.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\blamb\repos\vulkan-guide\build\CMakeFiles\05d7d1364dbd098ff8ef7007e74d3396\Shaders.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\blamb\repos\vulkan-guide\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\blamb\repos\vulkan-guide\build\CMakeFiles\Shaders" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{45088573-A8B5-3DF0-B49C-8CF03933BF51}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

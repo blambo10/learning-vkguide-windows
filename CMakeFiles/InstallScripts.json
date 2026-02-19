@@ -1,0 +1,12 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/blamb/repos/vulkan-guide/build/cmake_install.cmake",
+		"C:/Users/blamb/repos/vulkan-guide/build/third_party/cmake_install.cmake",
+		"C:/Users/blamb/repos/vulkan-guide/build/third_party/fastgltf/cmake_install.cmake",
+		"C:/Users/blamb/repos/vulkan-guide/build/third_party/fmt/cmake_install.cmake",
+		"C:/Users/blamb/repos/vulkan-guide/build/third_party/SDL/cmake_install.cmake",
+		"C:/Users/blamb/repos/vulkan-guide/build/src/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
