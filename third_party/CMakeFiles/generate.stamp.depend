@@ -1,5 +1,0 @@
-# CMake generation dependency list for this directory.
-C:/Users/blamb/repos/vulkan-guide/third_party/CMakeLists.txt
-D:/Dev/Tools/Cmake/share/cmake-4.2/Modules/FindPackageHandleStandardArgs.cmake
-D:/Dev/Tools/Cmake/share/cmake-4.2/Modules/FindPackageMessage.cmake
-D:/Dev/Tools/Cmake/share/cmake-4.2/Modules/FindVulkan.cmake
