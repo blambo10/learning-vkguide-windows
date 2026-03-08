@@ -1,5 +1,5 @@
 ﻿// Continue here https://vkguide.dev/docs/new_chapter_3/render_pipeline/
-// at The top.
+// at VkPipeline PipelineBuilder::build_pipeline(VkDevice device)
 
 #include "vk_engine.h"
 

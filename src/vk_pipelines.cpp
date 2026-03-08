@@ -61,5 +61,5 @@ void PipelineBuilder::clear() {
 }
 
 VkPipeline PipelineBuilder::build_pipline(VkDevice device) {
-
+	//Todo: continue here
 }
