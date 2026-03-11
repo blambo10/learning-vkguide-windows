@@ -1,5 +1,5 @@
-﻿// Continue here https://vkguide.dev/docs/new_chapter_3/building_pipeline/
-// at The rasterizer state is a big one so we will split it on a few options.
+﻿// Continue here https://vkguide.dev/docs/new_chapter_3/mesh_buffers/
+// at Creating buffers
 
 #include "vk_engine.h"
 
@@ -106,6 +106,7 @@ void VulkanEngine::init_vulkan() {
 
     vkb::PhysicalDeviceSelector selector{ vkb_inst };
     vkb::PhysicalDevice physicalDevice = selector
+        .add_required_extension(VK_EXT_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_EXTENSION_NAME)
         .set_minimum_version(1, 3)
         .set_required_features_13(features)
         .set_required_features_12(features12)
@@ -115,7 +116,16 @@ void VulkanEngine::init_vulkan() {
 
     // create final device
     vkb::DeviceBuilder deviceBuilder{ physicalDevice };
-	vkb::Device vkb_device = deviceBuilder.build().value();
+
+    VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT unusedAttachments{};
+    unusedAttachments.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT;
+    unusedAttachments.dynamicRenderingUnusedAttachments = VK_TRUE;
+
+	vkb::Device vkb_device = deviceBuilder
+        .add_pNext(&unusedAttachments)
+        .build()
+        .value();
 
     // get the vkdevice handle
 	_device = vkb_device.device;
@@ -602,7 +612,7 @@ void VulkanEngine::draw()
     vkutil::transition_image(cmd,
         _drawImage.image,
         VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        VK_IMAGE_LAYOUT_GENERAL);
 
 	draw_background(cmd);
  

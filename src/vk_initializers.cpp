@@ -139,6 +139,7 @@ VkRenderingAttachmentInfo vkinit::attachment_info(
     VkRenderingAttachmentInfo colorAttachment {};
     colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
     colorAttachment.pNext = nullptr;
+    //colorAttachment.
 
     colorAttachment.imageView = view;
     colorAttachment.imageLayout = layout;
