@@ -290,7 +290,9 @@ void VulkanEngine::init_descriptors() {
 
 void VulkanEngine::init_pipelines() {
     init_background_pipelines();
+
     init_triangle_pipeline();
+    init_mesh_pipeline();
 }
 
 void VulkanEngine::init_background_pipelines() {
@@ -540,7 +542,21 @@ void VulkanEngine::init_mesh_pipeline() {
     _mainDeletionQueue.push_function([&]() {
         vkDestroyPipelineLayout(_device, _meshPipelineLayout, nullptr);
         vkDestroyPipeline(_device, _meshPipeline, nullptr);
-        });
+    });
+}
+
+void VulkanEngine::init_default_data() {
+    std::array<Vertex, 4> rect_vertices;
+
+    rect_vertices[0].position = { 0.5,-0.5, 0 };
+    rect_vertices[1].position = { 0.5,0.5, 0 };
+    rect_vertices[2].position = { -0.5,-0.5, 0 };
+    rect_vertices[3].position = { -0.5,0.5, 0 };
+
+    rect_vertices[0].color = { 0,0,0,1 };
+    rect_vertices[1].color = { 0.5,0.5,0.5 ,1 };
+    rect_vertices[2].color = { 1,0, 0,1 };
+    rect_vertices[3].color = { 0,1, 0,1 };
 }
 
 AllocatedBuffer VulkanEngine::create_buffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage) {
@@ -794,6 +810,28 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
 
     vkCmdSetScissor(cmd, 0, 1, &scissor);
     vkCmdDraw(cmd, 3, 1, 0, 0);
+
+    vkCmdBindPipeline(cmd, 
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        _meshPipeline);
+
+    GPUDrawPushConstants push_constants;
+    push_constants.worldMatrix = glm::mat4{ 1.f };
+    push_constants.vertexBuffer = rectangle.vertexBufferAddress;
+
+    vkCmdPushConstants(cmd, 
+        _meshPipelineLayout, 
+        VK_SHADER_STAGE_VERTEX_BIT, 
+        0, 
+        sizeof(GPUDrawPushConstants), 
+        &push_constants);
+    vkCmdBindIndexBuffer(cmd,
+        rectangle.indexBuffer.buffer,
+        0,
+        VK_INDEX_TYPE_UINT32);
+
+    vkCmdDrawIndexed(cmd, 6, 1, 0, 0, 0);
+
     vkCmdEndRendering(cmd);
 }
 
