@@ -1,5 +1,5 @@
-﻿// Continue here https://vkguide.dev/docs/new_chapter_3/mesh_buffers/
-// at "Now we call this function from our main init_pipelines() function."
+﻿// Continue here https://vkguide.dev/docs/new_chapter_3/loading_meshes/
+// at "As we iterate each primitive within a mesh, we use the iterateAccessor functions to access the vertex".
 
 #include "vk_engine.h"
 
@@ -66,6 +66,8 @@ void VulkanEngine::init()
     init_sync_structures();
 
 	init_descriptors();
+
+    init_default_data();
 
     init_pipelines();
 
@@ -536,6 +538,8 @@ void VulkanEngine::init_mesh_pipeline() {
     pipelineBuilder.set_color_attachment_format(_drawImage.imageFormat);
     pipelineBuilder.set_depth_format(VK_FORMAT_UNDEFINED);
 
+    _meshPipeline = pipelineBuilder.build_pipline(_device);
+
     vkDestroyShaderModule(_device, triangleFragShader, nullptr);
     vkDestroyShaderModule(_device, triangleVertexShader, nullptr);
 
@@ -557,6 +561,24 @@ void VulkanEngine::init_default_data() {
     rect_vertices[1].color = { 0.5,0.5,0.5 ,1 };
     rect_vertices[2].color = { 1,0, 0,1 };
     rect_vertices[3].color = { 0,1, 0,1 };
+
+    std::array<uint32_t, 6> rect_indices;
+
+    rect_indices[0] = 0;
+    rect_indices[1] = 1;
+    rect_indices[2] = 2;
+
+    rect_indices[3] = 2;
+    rect_indices[4] = 1;
+    rect_indices[5] = 3;
+
+    rectangle = uploadMesh(rect_indices, rect_vertices);
+
+    //delete the rectangle data on engine shutdown
+    _mainDeletionQueue.push_function([&]() {
+        destroy_buffer(rectangle.indexBuffer);
+        destroy_buffer(rectangle.vertexBuffer);
+        });
 }
 
 AllocatedBuffer VulkanEngine::create_buffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage) {
