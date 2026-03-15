@@ -1,5 +1,5 @@
 ﻿// Continue here https://vkguide.dev/docs/new_chapter_3/loading_meshes/
-// at "As we iterate each primitive within a mesh, we use the iterateAccessor functions to access the vertex".
+// at "You will see that the monkey head has colors. That because we have OverrideColors in the loader"
 
 #include "vk_engine.h"
 
@@ -18,6 +18,7 @@
 #include <vk_globals.h>
 #include <vk_logging.h>
 #include <vk_pipelines.h>
+#include <glm/gtx/transform.hpp>
 
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
@@ -574,6 +575,9 @@ void VulkanEngine::init_default_data() {
 
     rectangle = uploadMesh(rect_indices, rect_vertices);
 
+    testMeshes = loadGltfMeshes(this, "..\\..\\assets\\basicmesh.glb").value();
+    //testMeshes = loadGltfMeshes(this, "C:\\Users\\blamb\\repos\\vulkan - guide\\assets\\basicmesh.glb").value();
+//C:\Users\blamb\repos\vulkan - guide\assets
     //delete the rectangle data on engine shutdown
     _mainDeletionQueue.push_function([&]() {
         destroy_buffer(rectangle.indexBuffer);
@@ -853,6 +857,38 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
         VK_INDEX_TYPE_UINT32);
 
     vkCmdDrawIndexed(cmd, 6, 1, 0, 0, 0);
+
+    glm::mat4 view = glm::translate(glm::vec3{ 0,0,-5 });
+
+    glm::mat4 projection = glm::perspective(glm::radians(70.f), (float)_drawExtent.width / (float)_drawExtent.height, 10000.f, 0.1f);
+
+    projection[1][1] *= -1;
+
+    push_constants.worldMatrix = projection * view;
+
+    push_constants.vertexBuffer = testMeshes[2]->meshBuffers.vertexBufferAddress;
+
+
+    vkCmdPushConstants(cmd,
+        _meshPipelineLayout,
+        VK_SHADER_STAGE_VERTEX_BIT,
+        0,
+        sizeof(GPUDrawPushConstants),
+        &push_constants);
+
+    vkCmdBindIndexBuffer(cmd,
+        testMeshes[2]->meshBuffers.indexBuffer.buffer,
+        0,
+        VK_INDEX_TYPE_UINT32);
+
+    vkCmdDrawIndexed(cmd,
+        testMeshes[2]->surfaces[0].count,
+        1,
+        testMeshes[2]->surfaces[0].startIndex, 
+        0, 
+        0);
+
+
 
     vkCmdEndRendering(cmd);
 }

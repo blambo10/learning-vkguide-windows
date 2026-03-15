@@ -6,6 +6,7 @@
 #include <vk_types.h>
 #include <vulkan/vulkan.h>
 #include <vk_descriptors.h>
+#include <vk_loader.h>
 
 struct DeletionQueue
 {
@@ -119,6 +120,7 @@ public:
 	VkPipeline _meshPipeline;
 
 	GPUMeshBuffers rectangle;
+	std::vector<std::shared_ptr<MeshAsset>> testMeshes;
 
 	//initializes everything in the engine
 	void init();
