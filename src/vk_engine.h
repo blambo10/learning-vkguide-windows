@@ -104,6 +104,8 @@ public:
 	VmaAllocator _allocator;
 
 	AllocatedImage _drawImage;
+	AllocatedImage _depthImage;
+
 	VkExtent2D _drawExtent;
 
 	VkFence _immFence;
@@ -112,9 +114,6 @@ public:
 
 	std::vector<ComputeEffect> backgroundEffects;
 	int currentBackgroundEffect{ 0 };
-
-	VkPipelineLayout _trianglePipelineLayout;
-	VkPipeline _trianglePipeline;
 
 	VkPipelineLayout _meshPipelineLayout;
 	VkPipeline _meshPipeline;
@@ -156,7 +155,6 @@ private:
 	void init_pipelines();
 	void init_background_pipelines();
 	void init_imgui();
-	void init_triangle_pipeline();
 	void init_mesh_pipeline();
 	void init_default_data();
 	void create_swapchain(uint32_t width, uint32_t height);
