@@ -9,5 +9,6 @@ layout (location = 0) out vec4 outFragColor;
 void main() 
 {
 	//return red
+	//Monkey head opacity
 	outFragColor = vec4(inColor,1.0f);
 }

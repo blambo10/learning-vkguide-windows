@@ -1,5 +1,8 @@
-﻿// Continue here https://vkguide.dev/docs/new_chapter_3/blending/
+﻿// Continue here https://vkguide.dev/docs/new_chapter_3/resizing_window/
 // at the top
+
+//Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
+
 
 #include "vk_engine.h"
 
@@ -516,8 +519,10 @@ void VulkanEngine::init_mesh_pipeline() {
     pipelineBuilder.set_polygon_mode(VK_POLYGON_MODE_FILL);
     pipelineBuilder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
     pipelineBuilder.set_multisampling_none();
-    pipelineBuilder.disable_blending();
+    //pipelineBuilder.disable_blending();
     //pipelineBuilder.disable_depthtest();
+    //pipelineBuilder.enable_blending_additive();
+    pipelineBuilder.enable_blending_alphablend();
     pipelineBuilder.enable_depthtest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
     pipelineBuilder.set_color_attachment_format(_drawImage.imageFormat);
