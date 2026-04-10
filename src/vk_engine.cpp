@@ -1,8 +1,9 @@
-﻿// Continue here https://vkguide.dev/docs/new_chapter_3/resizing_window/
+﻿// Continue here https://vkguide.dev/docs/new_chapter_4/descriptor_abstractions/
 // at the top
 
 //Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
 
+//Note: Modify the _windowExtent to be manual width/height if you want to test the resizing functionality, otherwise it will be set to the maximum supported by the monitor
 
 #include "vk_engine.h"
 
@@ -47,10 +48,22 @@ void VulkanEngine::init()
     assert(loadedEngine == nullptr);
     loadedEngine = this;
 
+    LOG_INFO("Initializing SDL2 window");
+
     // We initialize SDL and create a window with it.
     SDL_Init(SDL_INIT_VIDEO);
 
-    SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN);
+    SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+
+    LOG_INFO("Creating SDL2 window");
+
+	// get the display mode so we can set the window size to the maximum supported by the monitor
+    if (SDL_GetCurrentDisplayMode(0, &DM) != 0) {
+        LOG_ERROR("Could not get display mode for video display: {}", SDL_GetError());
+    }
+
+	// set the window extent to the display mode size
+    _windowExtent = { (uint32_t)DM.w, (uint32_t)DM.h };
 
     _window = SDL_CreateWindow(
         "Vulkan Engine",
@@ -59,7 +72,6 @@ void VulkanEngine::init()
         _windowExtent.width,
         _windowExtent.height,
         window_flags);
-
 
     init_vulkan();
 
@@ -136,6 +148,13 @@ void VulkanEngine::init_vulkan() {
     // get the vkdevice handle
 	_device = vkb_device.device;
 	_chosenGPU = physicalDevice.physical_device;
+    
+    VkSurfaceCapabilitiesKHR capabilities;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, _surface, &_capabilities);
+
+    //_windowExtent.height = DM.h;
+    //_windowExtent.width = DM.w;
+
 
     _graphicsQueue = vkb_device.get_queue(vkb::QueueType::graphics).value();
     _graphicsQueueFamily = vkb_device.get_queue_index(vkb::QueueType::graphics).value();
@@ -163,6 +182,13 @@ void VulkanEngine::init_swapchain() {
         _windowExtent.height,
         1
     };
+
+	LOG_INFO("device capabilities: max image extent: {}x{}", DM.w, DM.h);
+   // VkExtent3D drawImageExtent = {
+   //     _capabilities.currentExtent.width,
+   //     _capabilities.currentExtent.height,
+		 //1
+   // };
 
     _drawImage.imageFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
     //_drawImage.imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
@@ -685,6 +711,14 @@ void VulkanEngine::draw_imgui(VkCommandBuffer cmd,
 
 void VulkanEngine::draw()
 {
+    _drawExtent.height = std::min(
+        _swapchainExtent.height,
+        _drawImage.imageExtent.height) * renderScale;
+    _drawExtent.width = std::min(
+        _swapchainExtent.width,
+        _drawImage.imageExtent.width
+	) * renderScale;
+
     VK_CHECK(
         vkWaitForFences(_device, 
         1, 
@@ -700,13 +734,17 @@ void VulkanEngine::draw()
 
     
     uint32_t swapchainImageIndex;
-    VK_CHECK(vkAcquireNextImageKHR(_device,
+    VkResult e = vkAcquireNextImageKHR(_device,
         _swapchain, 
         1000000000,
         get_current_frame()._swapchainSemaphore,
         nullptr,
-        &swapchainImageIndex)
+        &swapchainImageIndex
     );
+    if (e == VK_ERROR_OUT_OF_DATE_KHR) {
+        resize_requested = true;
+        return;
+    };
 
     
     VkCommandBuffer cmd = get_current_frame()._mainCommandBuffer;
@@ -812,7 +850,11 @@ void VulkanEngine::draw()
 	presentInfo.waitSemaphoreCount = 1;
 
     presentInfo.pImageIndices = &swapchainImageIndex;
-    VK_CHECK(vkQueuePresentKHR(_graphicsQueue, &presentInfo));
+    
+    VkResult presentResult = vkQueuePresentKHR(_graphicsQueue, &presentInfo);
+    if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR) {
+        resize_requested = true;
+    }
 
     get_current_frame()._deletionQueue.flush();
 
@@ -929,7 +971,10 @@ void VulkanEngine::run()
             }
 
             ImGui_ImplSDL2_ProcessEvent(&e);
+        }
 
+        if (resize_requested) {
+            resize_swapchain();
         }
 
         // do not draw if we are minimized
@@ -946,6 +991,8 @@ void VulkanEngine::run()
         //ImGui::ShowDemoWindow();
 
         if (ImGui::Begin("background")) {
+            ImGui::SliderFloat("Render Scale", &renderScale, 0.3f, 1.f);
+
             ComputeEffect& selected = backgroundEffects[currentBackgroundEffect];
 
             ImGui::Text("Selected effect: ", selected.name);
@@ -1005,6 +1052,21 @@ void VulkanEngine::create_swapchain(uint32_t width, uint32_t height) {
     _swapchainImageViews = vkbSwapchain.get_image_views().value();
 
     _renderSemaphores.resize(_swapchainImages.size());
+}
+
+void VulkanEngine::resize_swapchain() {
+    vkDeviceWaitIdle(_device);
+
+    destroy_swapchain();
+
+    int w, h;
+    SDL_GetWindowSize(_window, &w, &h);
+    _windowExtent.width = w;
+    _windowExtent.height = h;
+
+    create_swapchain(_windowExtent.width, _windowExtent.height);
+
+    resize_requested = false;
 }
 
 void VulkanEngine::destroy_swapchain() {

@@ -7,6 +7,8 @@
 #include <vulkan/vulkan.h>
 #include <vk_descriptors.h>
 #include <vk_loader.h>
+#include <SDL_video.h>
+
 
 struct DeletionQueue
 {
@@ -65,7 +67,8 @@ public:
 	int _frameNumber {0};
 	bool stop_rendering{ false };
 	bool _isFirstIteration{ true };
-	VkExtent2D _windowExtent{ 1700 , 900 };
+	VkExtent2D _windowExtent{ 1705 , 900 };
+	//VkExtent2D _windowExtent;
 
 	VkInstance _instance; // Vulkan library handle
 	VkDebugUtilsMessengerEXT _debug_messenger; // Vulkan debug outputhandle
@@ -73,6 +76,7 @@ public:
 	VkDevice _device; // Vulkan device for commands
 	VkSurfaceKHR _surface; // Vulkan window surface
 	VkExtent2D _swapchainExtent;
+	VkSurfaceCapabilitiesKHR _capabilities;
 
 	VkSwapchainKHR _swapchain;
 	VkFormat _swapchainImageFormat;
@@ -87,6 +91,7 @@ public:
 	VkPipelineLayout _gradientPipelineLayout;
 
 	struct SDL_Window* _window{ nullptr };
+	SDL_DisplayMode DM;
 
 	static VulkanEngine& Get();
 
@@ -107,6 +112,7 @@ public:
 	AllocatedImage _depthImage;
 
 	VkExtent2D _drawExtent;
+	float renderScale = 1.f;
 
 	VkFence _immFence;
 	VkCommandBuffer _immCommandBuffer;
@@ -121,6 +127,8 @@ public:
 	GPUMeshBuffers rectangle;
 	std::vector<std::shared_ptr<MeshAsset>> testMeshes;
 
+	bool resize_requested;
+
 	//initializes everything in the engine
 	void init();
 	
@@ -133,7 +141,8 @@ public:
 	void draw();
 	
 	void draw_imgui(VkCommandBuffer cmd,
-		VkImageView targetImageView);
+		VkImageView targetImageView
+	);
 
 	void draw_geometry(VkCommandBuffer cmd);
 
@@ -158,6 +167,7 @@ private:
 	void init_mesh_pipeline();
 	void init_default_data();
 	void create_swapchain(uint32_t width, uint32_t height);
+	void resize_swapchain();
 	void destroy_swapchain();
 	void destroy_buffer(const AllocatedBuffer& buffer);
 };
