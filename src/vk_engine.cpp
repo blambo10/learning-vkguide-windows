@@ -1,5 +1,5 @@
 ﻿// Continue here https://vkguide.dev/docs/new_chapter_4/descriptor_abstractions/
-// at the top
+// at Descriptor Writer
 
 //Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
 
@@ -32,7 +32,7 @@
 #include "imgui_impl_vulkan.h"
 
 #ifdef NDEBUG
-constexpr bool bUseValidationLayers = false;
+constexpr bool bUseValidationLayers = false; l - ; p;
 #else
 constexpr bool bUseValidationLayers = true;
 #endif
