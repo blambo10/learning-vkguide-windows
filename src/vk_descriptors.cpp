@@ -98,7 +98,7 @@ VkDescriptorPool DescriptorAllocatorGrowable::get_pool(VkDevice device) {
 	}
 
 	return newPool;
-}1
+};
 
 VkDescriptorPool DescriptorAllocatorGrowable::create_pool(VkDevice device,
 	uint32_t setCount,
@@ -115,6 +115,7 @@ VkDescriptorPool DescriptorAllocatorGrowable::create_pool(VkDevice device,
 	VkDescriptorPoolCreateInfo pool_info = {};
 	pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	pool_info.flags = 0;
+	pool_info.maxSets = setCount;
 	pool_info.poolSizeCount = (uint32_t)poolSizes.size();
 	pool_info.pPoolSizes = poolSizes.data();
 
@@ -126,6 +127,7 @@ VkDescriptorPool DescriptorAllocatorGrowable::create_pool(VkDevice device,
 void DescriptorAllocatorGrowable::init(VkDevice device,
 	uint32_t maxSets,
 	std::span<PoolSizeRatio> poolRatios) {
+	LOG_INFO("DescriptorAllocatorGrowable::init called with maxSets: {}", maxSets);
 
 	ratios.clear();
 
@@ -192,5 +194,74 @@ VkDescriptorSet DescriptorAllocatorGrowable::allocate(
 
 	readyPools.push_back(poolToUse);
 	return ds;
+}
+
+void DescriptorWriter::write_buffer(int binding, 
+	VkBuffer buffer,
+	size_t size,
+	size_t offset,
+	VkDescriptorType type) {
+
+	LOG_INFO("writing buffer to descriptor using writer");
+	
+	VkDescriptorBufferInfo& info = bufferInfos.emplace_back(
+		VkDescriptorBufferInfo{
+			.buffer = buffer,
+			.offset = offset,
+			.range = size
+		}
+	);
+
+	VkWriteDescriptorSet write = {
+		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+	};
+
+	write.dstBinding = binding;
+	write.dstSet = VK_NULL_HANDLE;
+	write.descriptorCount = 1;
+	write.descriptorType = type;
+	write.pBufferInfo = &info;
+
+	writes.push_back(write);
+};
+
+void DescriptorWriter::write_image(int binding,
+	VkImageView image,
+	VkSampler sampler,
+	VkImageLayout layout,
+	VkDescriptorType type) {
+
+	VkDescriptorImageInfo& info = imageInfos.emplace_back(
+		VkDescriptorImageInfo{
+			.sampler = sampler,
+			.imageView = image,
+			.imageLayout = layout
+		}
+	);
+
+	VkWriteDescriptorSet write = {
+		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET
+	};
+
+	write.dstBinding = binding;
+	write.dstSet = VK_NULL_HANDLE;
+	write.descriptorCount = 1;
+	write.descriptorType = type;
+	write.pImageInfo = &info;
+
+	writes.push_back(write);
+};
+
+void DescriptorWriter::clear() {
+	imageInfos.clear();
+	bufferInfos.clear();
+	writes.clear();
+};
+
+void DescriptorWriter::update_set(VkDevice device, VkDescriptorSet set) {
+	for (VkWriteDescriptorSet& w : writes) {
+		w.dstSet = set;
+	}
+	vkUpdateDescriptorSets(device, (uint32_t)writes.size(), writes.data(), 0, nullptr);
 }
 

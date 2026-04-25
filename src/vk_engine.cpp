@@ -1,5 +1,5 @@
-﻿// Continue here https://vkguide.dev/docs/new_chapter_4/descriptor_abstractions/
-// at Descriptor Writer
+﻿// Continue here https://vkguide.dev/docs/new_chapter_4/textures/
+// at the top
 
 //Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
 
@@ -306,8 +306,6 @@ void VulkanEngine::init_sync_structures() {
 void VulkanEngine::init_descriptors() {
     LOG_DEBUG("init descriptors");
 
-    //_drawImageDescriptors
-
     std::vector<DescriptorAllocator::PoolSizeRatio> sizes = {
         { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 }
     };
@@ -342,13 +340,46 @@ void VulkanEngine::init_descriptors() {
 
     vkUpdateDescriptorSets(_device, 1, &drawImageWrite, 0, nullptr);
 
+    {
+        DescriptorLayoutBuilder builder;
+        builder.add_binding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+        _gpuSceneDataDescriptorLayout = builder.build(_device,
+            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+    };
+
     LOG_DEBUG("updated descriptor sets");
+
+    LOG_INFO("frame descriptor allocators init");
+
+    for (int i = 0; i < FRAME_OVERLAP; i++) {
+        std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> frame_sizes = {
+            { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3 },
+			{  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3  },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3  },
+            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4 },
+        };
+
+        _frames[i]._frameDescriptors = DescriptorAllocatorGrowable{};
+        _frames[i]._frameDescriptors.init(_device, 1000, frame_sizes);
+
+        _mainDeletionQueue.push_function([&, i]() {
+            _frames[i]._frameDescriptors.destroy_pools(_device);
+        });
+    }
+
+    LOG_INFO("finished allocation of frame descriptor allocators init");
+
+
+    LOG_INFO("finished init_descriptors");
+
 
     _mainDeletionQueue.push_function([&]() {
         globalDescriptorAllocator.destroy_pool(_device);
 
         vkDestroyDescriptorSetLayout(_device, _drawImageDescriptorLayout, nullptr);
-    });
+        vkDestroyDescriptorSetLayout(_device, _gpuSceneDataDescriptorLayout, nullptr);
+        });
+
 };
 
 void VulkanEngine::init_pipelines() {
@@ -642,6 +673,8 @@ void VulkanEngine::cleanup()
 
             vkDestroyFence(_device, _frames[i]._renderFence, nullptr);
             vkDestroySemaphore(_device, _frames[i]._swapchainSemaphore, nullptr);
+            _frames[i]._deletionQueue.flush();
+            _frames[i]._frameDescriptors.destroy_pools(_device);
         }
 
         for (auto& mesh : testMeshes) {
@@ -726,6 +759,9 @@ void VulkanEngine::draw()
         true, 1000000000)
     );
     
+    get_current_frame()._deletionQueue.flush();
+    get_current_frame()._frameDescriptors.clear_pools(_device);
+
     VK_CHECK(
         vkResetFences(_device, 
         1, 
@@ -856,12 +892,42 @@ void VulkanEngine::draw()
         resize_requested = true;
     }
 
-    get_current_frame()._deletionQueue.flush();
+    //get_current_frame()._deletionQueue.flush();
 
     _frameNumber++;
 }
 
 void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
+
+	LOG_INFO("allocating buffer and image descriptor sets in drawing geometry");
+
+    AllocatedBuffer gpuSceneDataBuffer = create_buffer(sizeof(GPUSceneData), 
+        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+        VMA_MEMORY_USAGE_CPU_TO_GPU);
+    LOG_INFO("buffer created for gpu scene");
+
+    get_current_frame()._deletionQueue.push_function([=, this]() {
+        destroy_buffer(gpuSceneDataBuffer);
+    });
+
+    LOG_INFO("obtained frame for gpu scene");
+
+    GPUSceneData* sceneUniformData = (GPUSceneData*)gpuSceneDataBuffer.allocation->GetMappedData();
+    *sceneUniformData = sceneData;
+
+    LOG_INFO("obtained allocation for sceneuniformdata");
+
+	LOG_INFO("frame number: {}", _frameNumber);
+    // todo: fix this 
+    VkDescriptorSet globalDescriptor = get_current_frame()._frameDescriptors.allocate(_device, _gpuSceneDataDescriptorLayout);
+
+    LOG_INFO("writing descriptor set");
+    DescriptorWriter writer;
+    writer.write_buffer(0, gpuSceneDataBuffer.buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+    writer.update_set(_device, globalDescriptor);
+
+    LOG_INFO("finished allocating buffer and image descriptor sets in drawing geometry");
+
     VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(_drawImage.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(_depthImage.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 

@@ -36,6 +36,7 @@ struct FrameData {
 	VkFence _renderFence;
 
 	DeletionQueue _deletionQueue;
+	DescriptorAllocatorGrowable _frameDescriptors;
 };
 
 struct RenderData {
@@ -56,6 +57,15 @@ struct ComputeEffect {
 	VkPipelineLayout layout;
 
 	ComputePushConstants data;
+};
+
+struct GPUSceneData {
+	glm::mat4 view;
+	glm::mat4 proj;
+	glm::mat4 viewproj;
+	glm::vec4 ambientColor;
+	glm::vec4 sunlightDirection;
+	glm::vec4 sunlightColor;
 };
 
 constexpr unsigned int FRAME_OVERLAP = 2;
@@ -128,6 +138,10 @@ public:
 	std::vector<std::shared_ptr<MeshAsset>> testMeshes;
 
 	bool resize_requested;
+
+	GPUSceneData sceneData;
+
+	VkDescriptorSetLayout _gpuSceneDataDescriptorLayout;
 
 	//initializes everything in the engine
 	void init();
