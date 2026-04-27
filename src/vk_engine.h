@@ -169,6 +169,14 @@ public:
 
 	GPUMeshBuffers uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices);
 
+	AllocatedImage _whiteImage;
+	AllocatedImage _blackImage;
+	AllocatedImage _greyImage;
+	AllocatedImage _errorCheckerboardImage;
+
+	VkSampler _defaultSamplerLinear;
+	VkSampler _defaultSamplerNearest;
+
 private:
 	void init_vulkan();
 	void init_swapchain();
@@ -184,4 +192,16 @@ private:
 	void resize_swapchain();
 	void destroy_swapchain();
 	void destroy_buffer(const AllocatedBuffer& buffer);
+	AllocatedImage create_image(
+		VkExtent3D size, 
+		VkFormat format, 
+		VkImageUsageFlags usage, 
+		bool mipmapped = false);
+	AllocatedImage create_image(
+		void* data, 
+		VkExtent3D size, 
+		VkFormat format, 
+		VkImageUsageFlags usage, 
+		bool mipmapped = false);
+	void destroy_image(const AllocatedImage& img);
 };
