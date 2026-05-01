@@ -1,5 +1,5 @@
 ﻿// Continue here https://vkguide.dev/docs/new_chapter_4/textures/
-// at Binding images to shaders
+// at shader and connecting the descriptor set layout to the pipelinelayout creation.
 
 //Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
 
@@ -347,6 +347,15 @@ void VulkanEngine::init_descriptors() {
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
     };
 
+    {
+        DescriptorLayoutBuilder builder;
+        builder.add_binding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+        _singleImageDescriptorLayout = builder.build(
+            _device,
+            VK_SHADER_STAGE_FRAGMENT_BIT
+        );
+    };
+
     LOG_DEBUG("updated descriptor sets");
 
     LOG_INFO("frame descriptor allocators init");
@@ -542,7 +551,7 @@ void VulkanEngine::init_imgui() {
 
 void VulkanEngine::init_mesh_pipeline() {
     VkShaderModule triangleFragShader;
-    if (!vkutil::load_shader_module("../../shaders/colored_triangle.frag.spv", _device, &triangleFragShader)) {
+    if (!vkutil::load_shader_module("../../shaders/tex_image.frag.spv", _device, &triangleFragShader)) {
         LOG_ERROR("Error when building the triangle fragment shader module");
     }
     else {
