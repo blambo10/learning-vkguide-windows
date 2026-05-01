@@ -1,5 +1,5 @@
 ﻿// Continue here https://vkguide.dev/docs/new_chapter_4/textures/
-// at shader and connecting the descriptor set layout to the pipelinelayout creation.
+// debug from fix me at line 789
 
 //Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
 
@@ -574,6 +574,8 @@ void VulkanEngine::init_mesh_pipeline() {
     VkPipelineLayoutCreateInfo pipeline_layout_info = vkinit::pipeline_layout_create_info();
     pipeline_layout_info.pPushConstantRanges = &bufferRange;
     pipeline_layout_info.pushConstantRangeCount = 1;
+    pipeline_layout_info.pSetLayouts = &_singleImageDescriptorLayout;
+    pipeline_layout_info.setLayoutCount = 1;
 
     VK_CHECK(vkCreatePipelineLayout(_device, &pipeline_layout_info, nullptr, &_meshPipelineLayout));
 
@@ -784,6 +786,7 @@ AllocatedImage VulkanEngine::create_image(
     );
     view_info.subresourceRange.levelCount = img_info.mipLevels;
 
+    //todo: fix me 
     VK_CHECK(vkCreateImageView(_device, &view_info, nullptr, &newImage.imageView));
 
     return newImage;
@@ -1112,8 +1115,19 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
 
     LOG_INFO("writing descriptor set");
     DescriptorWriter writer;
-    writer.write_buffer(0, gpuSceneDataBuffer.buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-    writer.update_set(_device, globalDescriptor);
+    
+    writer.write_buffer(
+        0, 
+        gpuSceneDataBuffer.buffer, 
+        sizeof(GPUSceneData), 
+        0, 
+        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
+    );
+
+    writer.update_set(
+        _device, 
+        globalDescriptor
+    );
 
     LOG_INFO("finished allocating buffer and image descriptor sets in drawing geometry");
 
@@ -1150,12 +1164,32 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
     GPUDrawPushConstants push_constants;
     push_constants.worldMatrix = glm::mat4{ 1.f };
     
-    vkCmdPushConstants(cmd, 
+    vkCmdPushConstants(
+        cmd, 
         _meshPipelineLayout, 
         VK_SHADER_STAGE_VERTEX_BIT, 
         0, 
         sizeof(GPUDrawPushConstants), 
-        &push_constants);
+        &push_constants
+    );
+
+    VkDescriptorSet imageSet = get_current_frame()._frameDescriptors.allocate(
+        _device, 
+        _singleImageDescriptorLayout
+    );
+
+    {
+        DescriptorWriter writer;
+
+        writer.write_image(0,
+            _errorCheckerboardImage.imageView,
+            _defaultSamplerNearest,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+        );
+
+        writer.update_set(_device, imageSet);
+    }
 
     glm::mat4 view = glm::translate(glm::vec3{ 0,0,-5 });
 
@@ -1164,29 +1198,31 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
 
     projection[1][1] *= -1;
 
+    //GPUDrawPushConstants push_constants;
     push_constants.worldMatrix = projection * view;
-
     push_constants.vertexBuffer = testMeshes[2]->meshBuffers.vertexBufferAddress;
-
 
     vkCmdPushConstants(cmd,
         _meshPipelineLayout,
         VK_SHADER_STAGE_VERTEX_BIT,
         0,
         sizeof(GPUDrawPushConstants),
-        &push_constants);
+        &push_constants
+    );
 
     vkCmdBindIndexBuffer(cmd,
         testMeshes[2]->meshBuffers.indexBuffer.buffer,
         0,
-        VK_INDEX_TYPE_UINT32);
+        VK_INDEX_TYPE_UINT32
+    );
 
     vkCmdDrawIndexed(cmd,
         testMeshes[2]->surfaces[0].count,
         1,
         testMeshes[2]->surfaces[0].startIndex, 
         0, 
-        0);
+        0
+    );
 
     vkCmdEndRendering(cmd);
 }
