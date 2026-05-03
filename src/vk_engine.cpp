@@ -1,10 +1,10 @@
 ﻿// Continue here https://vkguide.dev/docs/new_chapter_4/textures/
-// debug from fix me at line 789
+// compile and run issue fixed, though the monkey head doesnt look like it should as per bottom of above page,
+// likely code missed or incorrect 
 
 //Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
 
 //Note: Modify the _windowExtent to be manual width/height if you want to test the resizing functionality, otherwise it will be set to the maximum supported by the monitor
-
 #include "vk_engine.h"
 
 #include <SDL.h>
@@ -646,12 +646,15 @@ void VulkanEngine::init_default_data() {
     //todo: may need to remove this.
     testMeshes = loadGltfMeshes(this, "..\\..\\assets\\basicmesh.glb").value();
 
+    LOG_INFO("creating white image");
     uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
     _whiteImage = create_image((void*)&white,
         VkExtent3D{ 1,1,1 },
         VK_FORMAT_R8G8B8A8_UNORM,
         VK_IMAGE_USAGE_SAMPLED_BIT
     );
+
+    LOG_INFO("white image created, now creating grey image");
 
     uint32_t grey = glm::packUnorm4x8(glm::vec4(0.66f, 0.66f, 0.66f, 1));
     _greyImage = create_image((void*)&grey,
@@ -660,6 +663,8 @@ void VulkanEngine::init_default_data() {
         VK_IMAGE_USAGE_SAMPLED_BIT
     );
 
+    LOG_INFO("grey image created, now creating black image");
+
     uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
     _blackImage = create_image(
         (void *)&black,
@@ -667,6 +672,8 @@ void VulkanEngine::init_default_data() {
         VK_FORMAT_R8G8B8A8_UNORM,
         VK_IMAGE_USAGE_SAMPLED_BIT
     );
+
+    LOG_INFO("black image created, now creating checkerboard image");
 
     uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
     std::array<uint32_t, 16 * 16> pixels;
@@ -774,6 +781,16 @@ AllocatedImage VulkanEngine::create_image(
 	allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 	allocinfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
+    VK_CHECK(vmaCreateImage(
+            _allocator,
+            &img_info,
+            &allocinfo,
+            &newImage.image,
+            &newImage.allocation,
+            nullptr
+        )
+    );
+
     VkImageAspectFlags aspectFlag = VK_IMAGE_ASPECT_COLOR_BIT;
     if (format == VK_FORMAT_D32_SFLOAT) {
         aspectFlag = VK_IMAGE_ASPECT_DEPTH_BIT;
@@ -786,8 +803,15 @@ AllocatedImage VulkanEngine::create_image(
     );
     view_info.subresourceRange.levelCount = img_info.mipLevels;
 
-    //todo: fix me 
-    VK_CHECK(vkCreateImageView(_device, &view_info, nullptr, &newImage.imageView));
+    
+    VK_CHECK(
+        vkCreateImageView(
+            _device, 
+            &view_info, 
+            nullptr, 
+            &newImage.imageView
+        )
+    );
 
     return newImage;
 }
@@ -800,11 +824,24 @@ AllocatedImage VulkanEngine::create_image(
     bool mipmapped) {
 
     size_t data_size = size.depth * size.height * 4;
-    AllocatedBuffer uploadbuffer = create_buffer(data_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+    AllocatedBuffer uploadbuffer = create_buffer(
+        data_size,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VMA_MEMORY_USAGE_CPU_TO_GPU
+    );
 
-    memcpy(uploadbuffer.info.pMappedData, data, data_size);
+    memcpy(
+        uploadbuffer.info.pMappedData, 
+        data, 
+        data_size
+    );
 
-    AllocatedImage new_image = create_image(size, format, usage, mipmapped);
+    AllocatedImage new_image = create_image(
+        size, 
+        format, 
+        usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+        mipmapped
+    );
 
     immediate_submit([&](VkCommandBuffer cmd) {
         vkutil::transition_image(
@@ -1111,23 +1148,23 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
 
 	LOG_INFO("frame number: {}", _frameNumber);
     // todo: fix this 
-    VkDescriptorSet globalDescriptor = get_current_frame()._frameDescriptors.allocate(_device, _gpuSceneDataDescriptorLayout);
+    //VkDescriptorSet globalDescriptor = get_current_frame()._frameDescriptors.allocate(_device, _gpuSceneDataDescriptorLayout);
 
-    LOG_INFO("writing descriptor set");
-    DescriptorWriter writer;
-    
-    writer.write_buffer(
-        0, 
-        gpuSceneDataBuffer.buffer, 
-        sizeof(GPUSceneData), 
-        0, 
-        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
-    );
+    //LOG_INFO("writing descriptor set");
+    //DescriptorWriter writer;
+    //
+    //writer.write_buffer(
+    //    0, 
+    //    gpuSceneDataBuffer.buffer, 
+    //    sizeof(GPUSceneData), 
+    //    0, 
+    //    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
+    //);
 
-    writer.update_set(
-        _device, 
-        globalDescriptor
-    );
+    //writer.update_set(
+    //    _device, 
+    //    globalDescriptor
+    //);
 
     LOG_INFO("finished allocating buffer and image descriptor sets in drawing geometry");
 
@@ -1158,20 +1195,7 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
     scissor.extent.height = _drawExtent.height;
 
     vkCmdSetScissor(cmd, 0, 1, &scissor);
-    
-    //vkCmdDraw(cmd, 3, 1, 0, 0);
 
-    GPUDrawPushConstants push_constants;
-    push_constants.worldMatrix = glm::mat4{ 1.f };
-    
-    vkCmdPushConstants(
-        cmd, 
-        _meshPipelineLayout, 
-        VK_SHADER_STAGE_VERTEX_BIT, 
-        0, 
-        sizeof(GPUDrawPushConstants), 
-        &push_constants
-    );
 
     VkDescriptorSet imageSet = get_current_frame()._frameDescriptors.allocate(
         _device, 
@@ -1198,7 +1222,7 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
 
     projection[1][1] *= -1;
 
-    //GPUDrawPushConstants push_constants;
+    GPUDrawPushConstants push_constants;
     push_constants.worldMatrix = projection * view;
     push_constants.vertexBuffer = testMeshes[2]->meshBuffers.vertexBufferAddress;
 
