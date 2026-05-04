@@ -1,6 +1,6 @@
 ﻿// Continue here https://vkguide.dev/docs/new_chapter_4/textures/
-// compile and run issue fixed, though the monkey head doesnt look like it should as per bottom of above page,
-// likely code missed or incorrect 
+// continue to debug why the checkerboard isnt rendering to monkey head from 
+// line 1173
 
 //Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
 
@@ -555,7 +555,7 @@ void VulkanEngine::init_mesh_pipeline() {
         LOG_ERROR("Error when building the triangle fragment shader module");
     }
     else {
-        LOG_INFO("Mesh fragment shader succesfully loaded");
+        LOG_INFO("Triangle fragment shader succesfully loaded");
     }
 
     VkShaderModule triangleVertexShader;
@@ -579,6 +579,7 @@ void VulkanEngine::init_mesh_pipeline() {
 
     VK_CHECK(vkCreatePipelineLayout(_device, &pipeline_layout_info, nullptr, &_meshPipelineLayout));
 
+    
     PipelineBuilder pipelineBuilder;
 
     pipelineBuilder._pipelineLayout = _meshPipelineLayout;
@@ -587,9 +588,6 @@ void VulkanEngine::init_mesh_pipeline() {
     pipelineBuilder.set_polygon_mode(VK_POLYGON_MODE_FILL);
     pipelineBuilder.set_cull_mode(VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
     pipelineBuilder.set_multisampling_none();
-    //pipelineBuilder.disable_blending();
-    //pipelineBuilder.disable_depthtest();
-    //pipelineBuilder.enable_blending_additive();
     pipelineBuilder.enable_blending_alphablend();
     pipelineBuilder.enable_depthtest(true, VK_COMPARE_OP_GREATER_OR_EQUAL);
 
@@ -643,7 +641,6 @@ void VulkanEngine::init_default_data() {
     //    destroy_buffer(rectangle.vertexBuffer);
     //    });
 
-    //todo: may need to remove this.
     testMeshes = loadGltfMeshes(this, "..\\..\\assets\\basicmesh.glb").value();
 
     LOG_INFO("creating white image");
@@ -1174,6 +1171,7 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
     VkRenderingInfo renderInfo = vkinit::rendering_info(_drawExtent, &colorAttachment, &depthAttachment);
     vkCmdBeginRendering(cmd, &renderInfo);
 
+    //todo: look at this function as there are duplicates and unecesarry code
     vkCmdBindPipeline(cmd, 
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         _meshPipeline);
