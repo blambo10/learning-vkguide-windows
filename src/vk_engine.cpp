@@ -1,6 +1,6 @@
 ﻿// Continue here https://vkguide.dev/docs/new_chapter_4/textures/
 // continue to debug why the checkerboard isnt rendering to monkey head from 
-// line 1173
+// line 694 issue with copy buffer to image, src or dst is wrong size need to debug
 
 //Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
 
@@ -672,20 +672,33 @@ void VulkanEngine::init_default_data() {
 
     LOG_INFO("black image created, now creating checkerboard image");
 
+    //uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+    //std::array<uint32_t, 16 * 16> pixels;
+    //for (int x = 0; x < 16; x++) {
+    //    for (int y = 0; y < 16; y++) {
+    //        pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
+    //    }
+    //}
+
     uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
-    std::array<uint32_t, 16 * 16> pixels;
+    std::array<uint32_t, 16 * 16 > pixels; //for 16x16 checkerboard texture
     for (int x = 0; x < 16; x++) {
         for (int y = 0; y < 16; y++) {
             pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
         }
     }
 
+	LOG_INFO("finished creating checkerboard image, now creating image resource");
+    
+	//todo: fix the size issue here (causing the error when copying from buffer to image, trying to copy more than the buffer contains)
     _errorCheckerboardImage = create_image(
         pixels.data(),
         VkExtent3D{ 16,16,1 },
         VK_FORMAT_R8G8B8A8_UNORM,
         VK_IMAGE_USAGE_SAMPLED_BIT
     );
+
+    LOG_INFO("Finished copying checkerboard error image from buffer to image");
 
     VkSamplerCreateInfo sampl = {
         .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO
@@ -859,6 +872,8 @@ AllocatedImage VulkanEngine::create_image(
         copyRegion.imageSubresource.layerCount = 1;
         copyRegion.imageExtent = size;
 
+        LOG_INFO("copying upload buffer to image");
+
         vkCmdCopyBufferToImage(
             cmd,
             uploadbuffer.buffer,
@@ -867,6 +882,8 @@ AllocatedImage VulkanEngine::create_image(
             1,
 			&copyRegion
         );
+
+        LOG_INFO("finished copying upload buffer to image");
 
         vkutil::transition_image(
             cmd,
