@@ -1,6 +1,7 @@
 ﻿// Continue here https://vkguide.dev/docs/new_chapter_4/textures/
 // continue to debug why the checkerboard isnt rendering to monkey head from 
-// line 694 issue with copy buffer to image, src or dst is wrong size need to debug
+
+//trying to fix error where vkdescriptorsetlayout isnt being destroyed, likely one that was created in this section 
 
 //Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
 
@@ -833,7 +834,7 @@ AllocatedImage VulkanEngine::create_image(
     VkImageUsageFlags usage,
     bool mipmapped) {
 
-    size_t data_size = size.depth * size.height * 4;
+    size_t data_size = size.width * size.height * 4;
     AllocatedBuffer uploadbuffer = create_buffer(
         data_size,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -1230,6 +1231,17 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
         writer.update_set(_device, imageSet);
     }
 
+    vkCmdBindDescriptorSets(
+        cmd,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        _meshPipelineLayout,
+        0,
+        1,
+        &imageSet,
+        0,
+        nullptr
+    );
+
     glm::mat4 view = glm::translate(glm::vec3{ 0,0,-5 });
 
     // Camera Projection
@@ -1255,6 +1267,7 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
         VK_INDEX_TYPE_UINT32
     );
 
+    LOG_INFO("drawing mesh");
     vkCmdDrawIndexed(cmd,
         testMeshes[2]->surfaces[0].count,
         1,
@@ -1262,6 +1275,7 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
         0, 
         0
     );
+    LOG_INFO("finished drawing mesh");
 
     vkCmdEndRendering(cmd);
 }
