@@ -1,5 +1,5 @@
-﻿// Continue here https://vkguide.dev/docs/new_chapter_4/textures/
-// continue to debug why the checkerboard isnt rendering to monkey head from 
+﻿//Continue here https://vkguide.dev/docs/new_chapter_4/materials/
+// at the top
 
 //trying to fix error where vkdescriptorsetlayout isnt being destroyed, likely one that was created in this section 
 
@@ -1146,25 +1146,17 @@ void VulkanEngine::draw()
 
 void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
 
-	LOG_INFO("allocating buffer and image descriptor sets in drawing geometry");
-
     AllocatedBuffer gpuSceneDataBuffer = create_buffer(sizeof(GPUSceneData), 
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
         VMA_MEMORY_USAGE_CPU_TO_GPU);
-    LOG_INFO("buffer created for gpu scene");
 
     get_current_frame()._deletionQueue.push_function([=, this]() {
         destroy_buffer(gpuSceneDataBuffer);
     });
 
-    LOG_INFO("obtained frame for gpu scene");
-
     GPUSceneData* sceneUniformData = (GPUSceneData*)gpuSceneDataBuffer.allocation->GetMappedData();
     *sceneUniformData = sceneData;
 
-    LOG_INFO("obtained allocation for sceneuniformdata");
-
-	LOG_INFO("frame number: {}", _frameNumber);
     // todo: fix this 
     //VkDescriptorSet globalDescriptor = get_current_frame()._frameDescriptors.allocate(_device, _gpuSceneDataDescriptorLayout);
 
@@ -1183,8 +1175,6 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
     //    _device, 
     //    globalDescriptor
     //);
-
-    LOG_INFO("finished allocating buffer and image descriptor sets in drawing geometry");
 
     VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(_drawImage.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(_depthImage.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
@@ -1270,7 +1260,6 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
         VK_INDEX_TYPE_UINT32
     );
 
-    LOG_INFO("drawing mesh");
     vkCmdDrawIndexed(cmd,
         testMeshes[2]->surfaces[0].count,
         1,
@@ -1278,7 +1267,6 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
         0, 
         0
     );
-    LOG_INFO("finished drawing mesh");
 
     vkCmdEndRendering(cmd);
 }
