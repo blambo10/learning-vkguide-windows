@@ -20,7 +20,7 @@
 #include <chrono>
 #include <thread>
 #include <vk_images.h>
-#include <vk_globals.h>
+#include <vk_globals.h> 
 #include <vk_logging.h>
 #include <vk_pipelines.h>
 #include <glm/gtx/transform.hpp>
@@ -388,6 +388,7 @@ void VulkanEngine::init_descriptors() {
 
         vkDestroyDescriptorSetLayout(_device, _drawImageDescriptorLayout, nullptr);
         vkDestroyDescriptorSetLayout(_device, _gpuSceneDataDescriptorLayout, nullptr);
+        vkDestroyDescriptorSetLayout(_device, _singleImageDescriptorLayout, nullptr);
         });
 
 };
@@ -934,6 +935,8 @@ void VulkanEngine::cleanup()
         LOG_INFO("Destroying surface");
         //LOG_INFO("deleting device before deleting pipelines here");
         vkDestroySurfaceKHR(_instance, _surface, nullptr);
+
+        //todo: _singleImageDescriptorLayout must be destroyed prior to destroying this device
         vkDestroyDevice(_device, nullptr);
 
         LOG_INFO("Destroying debug messenger and instance + window");
