@@ -1,5 +1,5 @@
 ﻿//Continue here https://vkguide.dev/docs/new_chapter_4/materials/
-// at the top
+// continue at "Lets look at the implementation of those functions"
 
 //trying to fix error where vkdescriptorsetlayout isnt being destroyed, likely one that was created in this section 
 
