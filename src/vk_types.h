@@ -67,7 +67,7 @@ struct GPUDrawPushConstants {
 };
 
 enum class MaterialPass :uint8_t {
-    Maincolor,
+    MainColor,
     Transparent,
     Other
 };

@@ -94,7 +94,7 @@ struct GLTFMetallic_Roughness {
 
 	DescriptorWriter writer;
 
-	void build_pipeline(VulkanEngine* engine);
+	void build_pipelines(VulkanEngine* engine);
 	void clear_resources(VkDevice device);
 
 	MaterialInstance write_material(
@@ -129,7 +129,7 @@ public:
 	VkQueue _graphicsQueue;
 	uint32_t _graphicsQueueFamily;
 
-	DescriptorAllocator globalDescriptorAllocator;
+	DescriptorAllocatorGrowable globalDescriptorAllocator;
 	VkDescriptorSet _drawImageDescriptors;
 	VkDescriptorSetLayout _drawImageDescriptorLayout;
 	VkDescriptorSetLayout _singleImageDescriptorLayout;
@@ -179,6 +179,9 @@ public:
 	GPUSceneData sceneData;
 
 	VkDescriptorSetLayout _gpuSceneDataDescriptorLayout;
+
+	MaterialInstance defaultData;
+	GLTFMetallic_Roughness metalRoughMaterial;
 
 	//initializes everything in the engine
 	void init();

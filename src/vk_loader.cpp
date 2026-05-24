@@ -251,4 +251,3 @@ std::optional<std::vector<std::shared_ptr<MeshAsset>>> loadGltfMeshes(VulkanEngi
 	return meshes;
 }
 
-

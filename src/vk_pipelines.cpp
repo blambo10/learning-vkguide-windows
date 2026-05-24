@@ -60,7 +60,7 @@ void PipelineBuilder::clear() {
 	_shaderStages.clear();
 }
 
-VkPipeline PipelineBuilder::build_pipline(VkDevice device) {
+VkPipeline PipelineBuilder::build_pipeline(VkDevice device) {
 	VkPipelineViewportStateCreateInfo viewportState = {};
 	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	viewportState.pNext = nullptr;
