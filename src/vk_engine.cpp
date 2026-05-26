@@ -1,6 +1,8 @@
 ﻿//Continue here https://vkguide.dev/docs/new_chapter_4/new_drawloop/
 // at the top
 
+//debug the globalDescriptorAllocator changing type from DescriptorAllocator to DescriptorAllocatorGrowable 
+
 //trying to fix error where vkdescriptorsetlayout isnt being destroyed, likely one that was created in this section 
 
 //Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
@@ -307,11 +309,12 @@ void VulkanEngine::init_sync_structures() {
 void VulkanEngine::init_descriptors() {
     LOG_DEBUG("init descriptors");
 
-    std::vector<DescriptorAllocator::PoolSizeRatio> sizes = {
+    std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {
         { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 }
     };
 
-    globalDescriptorAllocator.init_pool(_device, 10, sizes);
+    //globalDescriptorAllocator.init_pool(_device, 10, sizes);
+    globalDescriptorAllocator.init(_device, 10, sizes);
 
     {
         DescriptorLayoutBuilder builder;
@@ -384,7 +387,7 @@ void VulkanEngine::init_descriptors() {
 
 
     _mainDeletionQueue.push_function([&]() {
-        globalDescriptorAllocator.destroy_pool(_device);
+        globalDescriptorAllocator.destroy_pools(_device);
 
         vkDestroyDescriptorSetLayout(_device, _drawImageDescriptorLayout, nullptr);
         vkDestroyDescriptorSetLayout(_device, _gpuSceneDataDescriptorLayout, nullptr);

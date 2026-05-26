@@ -106,6 +106,15 @@ struct GLTFMetallic_Roughness {
 
 };
 
+struct MeshNode : public Node {
+	std::shared_ptr<MeshAsset> mesh;
+
+	virtual void Draw(
+		const glm::mat4& topMatrix,
+		DrawContext& ctx) override;
+
+};
+
 class VulkanEngine {
 public:
 
