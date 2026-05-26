@@ -1,5 +1,5 @@
 ﻿//Continue here https://vkguide.dev/docs/new_chapter_4/new_drawloop/
-// at the top
+// at the top "With those defined, the Draw() function of the meshnode looks like this"
 
 //debug the globalDescriptorAllocator changing type from DescriptorAllocator to DescriptorAllocatorGrowable 
 
