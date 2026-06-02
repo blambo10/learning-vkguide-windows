@@ -1,5 +1,5 @@
 ﻿//Continue here https://vkguide.dev/docs/new_chapter_4/new_drawloop/
-// at the top "With those defined, the Draw() function of the meshnode looks like this"
+// at the top "To do that, remove the code relevant to that rectangle hardcoded mesh and the code that used to draw"
 
 //debug the globalDescriptorAllocator changing type from DescriptorAllocator to DescriptorAllocatorGrowable 
 
@@ -324,6 +324,7 @@ void VulkanEngine::init_descriptors() {
 
     LOG_DEBUG("descriptor pools allocated");
 
+    LOG_INFO("starting allocate for draw image");
     _drawImageDescriptors = globalDescriptorAllocator.allocate(_device, _drawImageDescriptorLayout);
 
     VkDescriptorImageInfo imgInfo = {};
@@ -714,12 +715,14 @@ void VulkanEngine::init_default_data() {
 	sampl.magFilter = VK_FILTER_NEAREST;
 	sampl.minFilter = VK_FILTER_NEAREST;
     
+    LOG_INFO("Creating sample");
     vkCreateSampler(
         _device,
         &sampl,
         nullptr,
         &_defaultSamplerNearest
     );
+    LOG_INFO("finished creating sample");
 
     sampl.magFilter = VK_FILTER_LINEAR;
 	sampl.minFilter = VK_FILTER_LINEAR;
@@ -756,12 +759,17 @@ void VulkanEngine::init_default_data() {
     materialResources.dataBuffer = materialConstants.buffer;
     materialResources.dataBufferOffset = 0;
 
+	LOG_INFO("creating material resource");
+    //todo: continue debugging from here, issue with 
+    //vkAllocateDescriptorSets(): pAllocateInfo->pSetLayouts[0] Invalid VkDescriptorSetLayout Object
     defaultData = metalRoughMaterial.write_material(
         _device,
         MaterialPass::MainColor,
         materialResources,
         globalDescriptorAllocator
     );
+
+    LOG_INFO("finished creating material resource");
 
     _mainDeletionQueue.push_function([&]() {
         vkDestroySampler(
@@ -781,6 +789,7 @@ void VulkanEngine::init_default_data() {
         destroy_image(_errorCheckerboardImage);
 
     });
+	
 }
 
 AllocatedBuffer VulkanEngine::create_buffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage) {
@@ -1645,3 +1654,22 @@ MaterialInstance GLTFMetallic_Roughness::write_material(
     return matData;
 }
 
+void MeshNode::Draw(const glm::mat4& topMatrix, DrawContext& ctx) {
+    glm::mat4 nodeMatrix = topMatrix * worldTransform;
+
+    for (auto& s : mesh->surfaces) {
+        RenderObject def;
+        def.indexCount = s.count;
+        def.firstIndex = s.startIndex;
+        def.indexBuffer = mesh->meshBuffers.indexBuffer.buffer;
+        def.material = &s.material->data;
+
+        def.transform = nodeMatrix;
+        def.vertexBufferAddress = mesh->meshBuffers.vertexBufferAddress;
+
+        ctx.OpaqueSurfaces.push_back(def);
+    }
+
+    // recursive down draw of nodes on object
+    Node::Draw(topMatrix, ctx);
+}
