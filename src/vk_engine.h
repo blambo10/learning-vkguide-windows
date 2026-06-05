@@ -207,6 +207,9 @@ public:
 	MaterialInstance defaultData;
 	GLTFMetallic_Roughness metalRoughMaterial;
 
+	DrawContext mainDrawContext;
+	std::unordered_map<std::string, std::shared_ptr<Node>> loadedNodes;
+
 	//initializes everything in the engine
 	void init();
 	
@@ -269,4 +272,5 @@ private:
 		VkImageUsageFlags usage, 
 		bool mipmapped = false);
 	void destroy_image(const AllocatedImage& img);
+	void update_scene();
 };

@@ -1,5 +1,11 @@
 ﻿//Continue here https://vkguide.dev/docs/new_chapter_4/new_drawloop/
-// at the top "To do that, remove the code relevant to that rectangle hardcoded mesh and the code that used to draw"
+// start from "When the RenderObject was designed, it was meant to directly convert into a single draw command on"
+
+
+
+// Note: you may need to debug from this point, however it may just be the code was incomplete.
+//       finish the chapter first, then run it and see if it remedies the issue.
+// todo: continue debugging at line 765
 
 //debug the globalDescriptorAllocator changing type from DescriptorAllocator to DescriptorAllocatorGrowable 
 
@@ -760,6 +766,7 @@ void VulkanEngine::init_default_data() {
     materialResources.dataBufferOffset = 0;
 
 	LOG_INFO("creating material resource");
+    
     //todo: continue debugging from here, issue with 
     //vkAllocateDescriptorSets(): pAllocateInfo->pSetLayouts[0] Invalid VkDescriptorSetLayout Object
     defaultData = metalRoughMaterial.write_material(
@@ -1204,7 +1211,7 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
     *sceneUniformData = sceneData;
 
     // todo: fix this 
-    //VkDescriptorSet globalDescriptor = get_current_frame()._frameDescriptors.allocate(_device, _gpuSceneDataDescriptorLayout);
+    VkDescriptorSet globalDescriptor = get_current_frame()._frameDescriptors.allocate(_device, _gpuSceneDataDescriptorLayout);
 
     //LOG_INFO("writing descriptor set");
     //DescriptorWriter writer;
@@ -1257,62 +1264,108 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
         _singleImageDescriptorLayout
     );
 
-    {
-        DescriptorWriter writer;
-
-        writer.write_image(0,
-            _errorCheckerboardImage.imageView,
-            _defaultSamplerNearest,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+    for (const RenderObject& draw : mainDrawContext.OpaqueSurfaces) {
+        vkCmdBindPipeline(cmd,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            draw.material->pipeline->pipeline
         );
 
-        writer.update_set(_device, imageSet);
+        vkCmdBindDescriptorSets(cmd,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            draw.material->pipeline->layout,
+            0,1,
+            &globalDescriptor,
+            0,
+            nullptr
+        );
+
+        vkCmdBindDescriptorSets(cmd,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            draw.material->pipeline->layout,
+            1,
+            1,
+            &draw.material->materialSet,
+            0,
+            nullptr
+        );
+
+        vkCmdBindIndexBuffer(cmd,
+            draw.indexBuffer, 0, VK_INDEX_TYPE_UINT32
+        );
+
+        GPUDrawPushConstants pushConstants;
+        pushConstants.vertexBuffer = draw.vertexBufferAddress;
+        pushConstants.worldMatrix = draw.transform;
+        vkCmdPushConstants(cmd,
+            draw.material->pipeline->layout,
+            VK_SHADER_STAGE_VERTEX_BIT,
+            0,
+            sizeof(GPUDrawPushConstants),
+            &pushConstants
+        );
+        
+        vkCmdDrawIndexed(cmd, draw.indexCount, 1, draw.firstIndex, 0, 0);
     }
 
-    vkCmdBindDescriptorSets(
-        cmd,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        _meshPipelineLayout,
-        0,
-        1,
-        &imageSet,
-        0,
-        nullptr
-    );
+    //TODO: DELETE ALL THIS
+    //{
+    //    DescriptorWriter writer;
 
-    glm::mat4 view = glm::translate(glm::vec3{ 0,0,-5 });
+    //    writer.write_image(0,
+    //        _errorCheckerboardImage.imageView,
+    //        _defaultSamplerNearest,
+    //        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    //        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+    //    );
 
-    // Camera Projection
-    glm::mat4 projection = glm::perspective(glm::radians(70.f), (float)_drawExtent.width / (float)_drawExtent.height, 10000.f, 0.1f);
+    //    writer.update_set(_device, imageSet);
+    //}
 
-    projection[1][1] *= -1;
+    //vkCmdBindDescriptorSets(
+    //    cmd,
+    //    VK_PIPELINE_BIND_POINT_GRAPHICS,
+    //    _meshPipelineLayout,
+    //    0,
+    //    1,
+    //    &imageSet,
+    //    0,
+    //    nullptr
+    //);
 
-    GPUDrawPushConstants push_constants;
-    push_constants.worldMatrix = projection * view;
-    push_constants.vertexBuffer = testMeshes[2]->meshBuffers.vertexBufferAddress;
+    //glm::mat4 view = glm::translate(glm::vec3{ 0,0,-5 });
 
-    vkCmdPushConstants(cmd,
-        _meshPipelineLayout,
-        VK_SHADER_STAGE_VERTEX_BIT,
-        0,
-        sizeof(GPUDrawPushConstants),
-        &push_constants
-    );
+    //// Camera Projection
+    //glm::mat4 projection = glm::perspective(glm::radians(70.f), (float)_drawExtent.width / (float)_drawExtent.height, 10000.f, 0.1f);
 
-    vkCmdBindIndexBuffer(cmd,
-        testMeshes[2]->meshBuffers.indexBuffer.buffer,
-        0,
-        VK_INDEX_TYPE_UINT32
-    );
+    //projection[1][1] *= -1;
 
-    vkCmdDrawIndexed(cmd,
-        testMeshes[2]->surfaces[0].count,
-        1,
-        testMeshes[2]->surfaces[0].startIndex, 
-        0, 
-        0
-    );
+    //GPUDrawPushConstants push_constants;
+    //push_constants.worldMatrix = projection * view;
+    //push_constants.vertexBuffer = testMeshes[2]->meshBuffers.vertexBufferAddress;
+
+    //vkCmdPushConstants(cmd,
+    //    _meshPipelineLayout,
+    //    VK_SHADER_STAGE_VERTEX_BIT,
+    //    0,
+    //    sizeof(GPUDrawPushConstants),
+    //    &push_constants
+    //);
+
+    //vkCmdBindIndexBuffer(cmd,
+    //    testMeshes[2]->meshBuffers.indexBuffer.buffer,
+    //    0,
+    //    VK_INDEX_TYPE_UINT32
+    //);
+
+    //vkCmdDrawIndexed(cmd,
+    //    testMeshes[2]->surfaces[0].count,
+    //    1,
+    //    testMeshes[2]->surfaces[0].startIndex, 
+    //    0, 
+    //    0
+    //);
+
+    //TODO: STOP HERE
 
     vkCmdEndRendering(cmd);
 }
@@ -1614,6 +1667,7 @@ MaterialInstance GLTFMetallic_Roughness::write_material(
     const MaterialResources& resources,
     DescriptorAllocatorGrowable& descriptorAllocator) {
 
+    LOG_INFO("begin writing material");
     MaterialInstance matData;
     if (pass == MaterialPass::Transparent) {
         matData.pipeline = &transparentPipeline;
@@ -1622,8 +1676,10 @@ MaterialInstance GLTFMetallic_Roughness::write_material(
         matData.pipeline = &opaquePipeline;
     }
 
+    LOG_INFO("begin material set allocation");
     matData.materialSet = descriptorAllocator.allocate(device, materialLayout);
-
+    LOG_INFO("finish writing material");
+    
     writer.clear();
     writer.write_buffer(
         0, 
