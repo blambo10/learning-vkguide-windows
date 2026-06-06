@@ -1,11 +1,12 @@
 ﻿//Continue here https://vkguide.dev/docs/new_chapter_4/new_drawloop/
-// start from "When the RenderObject was designed, it was meant to directly convert into a single draw command on"
+// start from "If you draw the engine now, you will see that the monkey head is being drawn with some dramatic top"
 
 
 
 // Note: you may need to debug from this point, however it may just be the code was incomplete.
 //       finish the chapter first, then run it and see if it remedies the issue.
 // todo: continue debugging at line 765
+//       1713
 
 //debug the globalDescriptorAllocator changing type from DescriptorAllocator to DescriptorAllocatorGrowable 
 
@@ -658,6 +659,7 @@ void VulkanEngine::init_default_data() {
     testMeshes = loadGltfMeshes(this, "..\\..\\assets\\basicmesh.glb").value();
 
     LOG_INFO("creating white image");
+
     uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
     _whiteImage = create_image((void*)&white,
         VkExtent3D{ 1,1,1 },
@@ -777,6 +779,20 @@ void VulkanEngine::init_default_data() {
     );
 
     LOG_INFO("finished creating material resource");
+
+    for (auto& m : testMeshes) {
+        std::shared_ptr<MeshNode> newNode = std::make_shared<MeshNode>();
+        newNode->mesh = m;
+
+        newNode->localTransform = glm::mat4{ 1.f };
+        newNode->worldTransform = glm::mat4{ 1.f };
+
+        for (auto& s : newNode->mesh->surfaces) {
+            s.material = std::make_shared<GLTFMaterial>(defaultData);
+        }
+
+        loadedNodes[m->name] = std::move(newNode);
+    }
 
     _mainDeletionQueue.push_function([&]() {
         vkDestroySampler(
@@ -1044,6 +1060,8 @@ void VulkanEngine::draw_imgui(VkCommandBuffer cmd,
 
 void VulkanEngine::draw()
 {
+    update_scene();
+
     _drawExtent.height = std::min(
         _swapchainExtent.height,
         _drawImage.imageExtent.height) * renderScale;
@@ -1661,6 +1679,22 @@ void GLTFMetallic_Roughness::build_pipelines(VulkanEngine* engine) {
 
 }
 
+void VulkanEngine::update_scene() {
+    mainDrawContext.OpaqueSurfaces.clear();
+
+    loadedNodes["Suzanne"]->Draw(glm::mat4{ 1.f }, mainDrawContext);
+
+    sceneData.view = glm::translate(glm::vec3{ 0, 0, -5 });
+    sceneData.proj = glm::perspective(glm::radians(70.f), (float)_windowExtent.width / (float)_windowExtent.height, 10000.f, 0.1f);
+
+	sceneData.proj[1][1] *= -1; // Invert Y for Vulkan
+    sceneData.viewproj = sceneData.proj * sceneData.view;
+
+    sceneData.ambientColor = glm::vec4(.1f);
+    sceneData.sunlightColor = glm::vec4(1.f);
+    sceneData.sunlightDirection = glm::vec4(0, 1, 0.5, 1.f);
+}
+
 MaterialInstance GLTFMetallic_Roughness::write_material(
     VkDevice device,
     MaterialPass pass,
@@ -1677,6 +1711,8 @@ MaterialInstance GLTFMetallic_Roughness::write_material(
     }
 
     LOG_INFO("begin material set allocation");
+    //todo: materialLayout isnt initialised and needs to be before calling this,
+    //      continue debugging from here.
     matData.materialSet = descriptorAllocator.allocate(device, materialLayout);
     LOG_INFO("finish writing material");
     
