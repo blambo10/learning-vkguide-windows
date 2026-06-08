@@ -5,8 +5,8 @@
 
 // Note: you may need to debug from this point, however it may just be the code was incomplete.
 //       finish the chapter first, then run it and see if it remedies the issue.
-// todo: continue debugging at line 765
-//       1713
+// todo: continue debugging at line 1078
+//       1078
 
 //debug the globalDescriptorAllocator changing type from DescriptorAllocator to DescriptorAllocatorGrowable 
 
@@ -93,9 +93,16 @@ void VulkanEngine::init()
 
 	init_descriptors();
 
-    init_default_data();
+    //init_background_pipelines();
+    //init_mesh_pipeline();
 
+    //todo: this instantiates stuct with materialLayout in it, that is used in above init_default_data
     init_pipelines();
+
+    // this seems to be the correct order, however the compiled shaders are missing
+    //metalRoughMaterial.build_pipelines(this);
+    //todo: following sequencing is wrong.
+    init_default_data();
 
     init_imgui();
 
@@ -409,7 +416,9 @@ void VulkanEngine::init_pipelines() {
 
     init_mesh_pipeline();
 
+    //initialtes materialLayout
     metalRoughMaterial.build_pipelines(this);
+    LOG_INFO("checking materialLayout instantiation");
 }
 
 void VulkanEngine::init_background_pipelines() {
@@ -624,6 +633,7 @@ void VulkanEngine::init_mesh_pipeline() {
 }
 
 void VulkanEngine::init_default_data() {
+    //metalRoughMaterial.build_pipelines(this);
     //std::array<Vertex, 4> rect_vertices;
 
     //rect_vertices[0].position = { 0.5,-0.5, 0 };
@@ -794,6 +804,8 @@ void VulkanEngine::init_default_data() {
         loadedNodes[m->name] = std::move(newNode);
     }
 
+    LOG_INFO("finished loading test meshes");
+
     _mainDeletionQueue.push_function([&]() {
         vkDestroySampler(
             _device,
@@ -812,6 +824,8 @@ void VulkanEngine::init_default_data() {
         destroy_image(_errorCheckerboardImage);
 
     });
+
+    LOG_INFO("finished loading default data");
 	
 }
 
@@ -1060,6 +1074,9 @@ void VulkanEngine::draw_imgui(VkCommandBuffer cmd,
 
 void VulkanEngine::draw()
 {
+    LOG_INFO("starting draw");
+    //TODO: continue to debug from here
+    //kCmdDrawIndexed(): the descriptor [VkDescriptorSet 0x610000000061, Set 0, Binding 0, Index 0, variable "sceneData"] is being used in draw but has never been updated via vkUpdateDescriptorSets() or a similar call
     update_scene();
 
     _drawExtent.height = std::min(
@@ -1602,13 +1619,15 @@ void VulkanEngine::destroy_image(const AllocatedImage& img) {
 void GLTFMetallic_Roughness::build_pipelines(VulkanEngine* engine) {
     VkShaderModule meshFragShader;
 
+    //todo: compile the shaders and make sure that they exist before running this
+
     if (!vkutil::load_shader_module("../../shaders/mesh.frag.spv", engine->_device, &meshFragShader)) {
-        LOG_ERROR("Error when building the triangle fragment shader module");
+        LOG_ERROR("Error when building the mesh fragment shader within build_pipeline");
     }
 
     VkShaderModule meshVertexShader;
     if (!vkutil::load_shader_module("../../shaders/mesh.vert.spv", engine->_device, &meshVertexShader)) {
-        LOG_ERROR("Error when building the triangle vertex shader module");
+        LOG_ERROR("Error when building the mesh vertex shader within build_pipeline");
     }
 
     VkPushConstantRange matrixRange{};
@@ -1680,6 +1699,7 @@ void GLTFMetallic_Roughness::build_pipelines(VulkanEngine* engine) {
 }
 
 void VulkanEngine::update_scene() {
+    LOG_INFO("starting update scene");
     mainDrawContext.OpaqueSurfaces.clear();
 
     loadedNodes["Suzanne"]->Draw(glm::mat4{ 1.f }, mainDrawContext);
@@ -1693,6 +1713,7 @@ void VulkanEngine::update_scene() {
     sceneData.ambientColor = glm::vec4(.1f);
     sceneData.sunlightColor = glm::vec4(1.f);
     sceneData.sunlightDirection = glm::vec4(0, 1, 0.5, 1.f);
+    LOG_INFO("finishing update scene");
 }
 
 MaterialInstance GLTFMetallic_Roughness::write_material(
