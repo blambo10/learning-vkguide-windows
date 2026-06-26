@@ -1,17 +1,6 @@
 ﻿//Continue here https://vkguide.dev/docs/new_chapter_4/new_drawloop/
 // start from "If you draw the engine now, you will see that the monkey head is being drawn with some dramatic top"
 
-
-
-// Note: you may need to debug from this point, however it may just be the code was incomplete.
-//       finish the chapter first, then run it and see if it remedies the issue.
-// todo: continue debugging at line 1078
-//       1078
-
-//debug the globalDescriptorAllocator changing type from DescriptorAllocator to DescriptorAllocatorGrowable 
-
-//trying to fix error where vkdescriptorsetlayout isnt being destroyed, likely one that was created in this section 
-
 //Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
 
 //Note: Modify the _windowExtent to be manual width/height if you want to test the resizing functionality, otherwise it will be set to the maximum supported by the monitor
@@ -324,7 +313,9 @@ void VulkanEngine::init_descriptors() {
     LOG_DEBUG("init descriptors");
 
     std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = {
-        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 }
+        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         1 },
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }
     };
 
     //globalDescriptorAllocator.init_pool(_device, 10, sizes);
@@ -629,6 +620,7 @@ void VulkanEngine::init_mesh_pipeline() {
     _mainDeletionQueue.push_function([&]() {
         vkDestroyPipelineLayout(_device, _meshPipelineLayout, nullptr);
         vkDestroyPipeline(_device, _meshPipeline, nullptr);
+
     });
 }
 
@@ -1078,6 +1070,9 @@ void VulkanEngine::draw()
     //TODO: continue to debug from here
     //kCmdDrawIndexed(): the descriptor [VkDescriptorSet 0x610000000061, Set 0, Binding 0, Index 0, variable "sceneData"] is being used in draw but has never been updated via vkUpdateDescriptorSets() or a similar call
     update_scene();
+    LOG_INFO("completed update_scene();");
+
+    //todo: new bug after this line somewhere, keep debugging
 
     _drawExtent.height = std::min(
         _swapchainExtent.height,
@@ -1094,6 +1089,8 @@ void VulkanEngine::draw()
         true, 1000000000)
     );
     
+    LOG_INFO("wait for fence done");
+
     get_current_frame()._deletionQueue.flush();
     get_current_frame()._frameDescriptors.clear_pools(_device);
 
@@ -1139,8 +1136,9 @@ void VulkanEngine::draw()
         VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL
     );
 
-
+    LOG_INFO("drawing background");
 	draw_background(cmd);
+    LOG_INFO("drawing background complete");
  
     vkutil::transition_image(cmd, 
         _drawImage.image, 
@@ -1150,6 +1148,7 @@ void VulkanEngine::draw()
     //vkutil::transition_image(cmd, _depthImage.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
     draw_geometry(cmd);
+    LOG_INFO("drawing geomoetry complete");
 
     //LOG_INFO("BREAK");
 
@@ -1249,20 +1248,20 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
     VkDescriptorSet globalDescriptor = get_current_frame()._frameDescriptors.allocate(_device, _gpuSceneDataDescriptorLayout);
 
     //LOG_INFO("writing descriptor set");
-    //DescriptorWriter writer;
-    //
-    //writer.write_buffer(
-    //    0, 
-    //    gpuSceneDataBuffer.buffer, 
-    //    sizeof(GPUSceneData), 
-    //    0, 
-    //    VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
-    //);
+    DescriptorWriter writer;
+    
+    writer.write_buffer(
+        0, 
+        gpuSceneDataBuffer.buffer, 
+        sizeof(GPUSceneData), 
+        0, 
+        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
+    );
 
-    //writer.update_set(
-    //    _device, 
-    //    globalDescriptor
-    //);
+    writer.update_set(
+        _device, 
+        globalDescriptor
+    );
 
     VkRenderingAttachmentInfo colorAttachment = vkinit::attachment_info(_drawImage.imageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     VkRenderingAttachmentInfo depthAttachment = vkinit::depth_attachment_info(_depthImage.imageView, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
@@ -1339,7 +1338,10 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
             &pushConstants
         );
         
+        //TODO: issue is being produced here
+        LOG_INFO("vkCmdDrawIndexed call");
         vkCmdDrawIndexed(cmd, draw.indexCount, 1, draw.firstIndex, 0, 0);
+        LOG_INFO("vkCmdDrawIndexed done");
     }
 
     //TODO: DELETE ALL THIS
@@ -1695,6 +1697,19 @@ void GLTFMetallic_Roughness::build_pipelines(VulkanEngine* engine) {
         meshVertexShader,
         nullptr
     );
+
+    engine->_mainDeletionQueue.push_function([=]() {
+        vkDestroyPipelineLayout(engine->_device,
+            newLayout,
+            nullptr);
+        vkDestroyPipeline(engine->_device,
+            opaquePipeline.pipeline,
+            nullptr);
+        vkDestroyPipeline(engine->_device,
+            transparentPipeline.pipeline,
+            nullptr);
+		vkDestroyDescriptorSetLayout(engine->_device, materialLayout, nullptr);
+    });
 
 }
 
