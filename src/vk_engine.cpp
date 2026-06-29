@@ -1,5 +1,5 @@
-﻿//Continue here https://vkguide.dev/docs/new_chapter_4/new_drawloop/
-// start from "If you draw the engine now, you will see that the monkey head is being drawn with some dramatic top"
+﻿//Continue here https://vkguide.dev/docs/new_chapter_5/interactive_camera/
+// start from "The matrix functions look like this"
 
 //Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
 
@@ -1066,14 +1066,8 @@ void VulkanEngine::draw_imgui(VkCommandBuffer cmd,
 
 void VulkanEngine::draw()
 {
-    LOG_INFO("starting draw");
-    //TODO: continue to debug from here
-    //kCmdDrawIndexed(): the descriptor [VkDescriptorSet 0x610000000061, Set 0, Binding 0, Index 0, variable "sceneData"] is being used in draw but has never been updated via vkUpdateDescriptorSets() or a similar call
     update_scene();
-    LOG_INFO("completed update_scene();");
-
-    //todo: new bug after this line somewhere, keep debugging
-
+    
     _drawExtent.height = std::min(
         _swapchainExtent.height,
         _drawImage.imageExtent.height) * renderScale;
@@ -1089,8 +1083,6 @@ void VulkanEngine::draw()
         true, 1000000000)
     );
     
-    LOG_INFO("wait for fence done");
-
     get_current_frame()._deletionQueue.flush();
     get_current_frame()._frameDescriptors.clear_pools(_device);
 
@@ -1136,9 +1128,7 @@ void VulkanEngine::draw()
         VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL
     );
 
-    LOG_INFO("drawing background");
 	draw_background(cmd);
-    LOG_INFO("drawing background complete");
  
     vkutil::transition_image(cmd, 
         _drawImage.image, 
@@ -1148,9 +1138,6 @@ void VulkanEngine::draw()
     //vkutil::transition_image(cmd, _depthImage.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
     draw_geometry(cmd);
-    LOG_INFO("drawing geomoetry complete");
-
-    //LOG_INFO("BREAK");
 
     //transition the draw image and the swapchain image into their correct transfer layouts
     vkutil::transition_image(cmd,
@@ -1338,71 +1325,8 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
             &pushConstants
         );
         
-        //TODO: issue is being produced here
-        LOG_INFO("vkCmdDrawIndexed call");
         vkCmdDrawIndexed(cmd, draw.indexCount, 1, draw.firstIndex, 0, 0);
-        LOG_INFO("vkCmdDrawIndexed done");
     }
-
-    //TODO: DELETE ALL THIS
-    //{
-    //    DescriptorWriter writer;
-
-    //    writer.write_image(0,
-    //        _errorCheckerboardImage.imageView,
-    //        _defaultSamplerNearest,
-    //        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-    //        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
-    //    );
-
-    //    writer.update_set(_device, imageSet);
-    //}
-
-    //vkCmdBindDescriptorSets(
-    //    cmd,
-    //    VK_PIPELINE_BIND_POINT_GRAPHICS,
-    //    _meshPipelineLayout,
-    //    0,
-    //    1,
-    //    &imageSet,
-    //    0,
-    //    nullptr
-    //);
-
-    //glm::mat4 view = glm::translate(glm::vec3{ 0,0,-5 });
-
-    //// Camera Projection
-    //glm::mat4 projection = glm::perspective(glm::radians(70.f), (float)_drawExtent.width / (float)_drawExtent.height, 10000.f, 0.1f);
-
-    //projection[1][1] *= -1;
-
-    //GPUDrawPushConstants push_constants;
-    //push_constants.worldMatrix = projection * view;
-    //push_constants.vertexBuffer = testMeshes[2]->meshBuffers.vertexBufferAddress;
-
-    //vkCmdPushConstants(cmd,
-    //    _meshPipelineLayout,
-    //    VK_SHADER_STAGE_VERTEX_BIT,
-    //    0,
-    //    sizeof(GPUDrawPushConstants),
-    //    &push_constants
-    //);
-
-    //vkCmdBindIndexBuffer(cmd,
-    //    testMeshes[2]->meshBuffers.indexBuffer.buffer,
-    //    0,
-    //    VK_INDEX_TYPE_UINT32
-    //);
-
-    //vkCmdDrawIndexed(cmd,
-    //    testMeshes[2]->surfaces[0].count,
-    //    1,
-    //    testMeshes[2]->surfaces[0].startIndex, 
-    //    0, 
-    //    0
-    //);
-
-    //TODO: STOP HERE
 
     vkCmdEndRendering(cmd);
 }
@@ -1707,17 +1631,27 @@ void GLTFMetallic_Roughness::build_pipelines(VulkanEngine* engine) {
             nullptr);
         vkDestroyPipeline(engine->_device,
             transparentPipeline.pipeline,
-            nullptr);
+            nullptr); 
 		vkDestroyDescriptorSetLayout(engine->_device, materialLayout, nullptr);
     });
 
 }
 
 void VulkanEngine::update_scene() {
-    LOG_INFO("starting update scene");
     mainDrawContext.OpaqueSurfaces.clear();
 
     loadedNodes["Suzanne"]->Draw(glm::mat4{ 1.f }, mainDrawContext);
+
+    for (int x = -2; x < 3; x++) {
+        int yTranslationBase = 1;
+        glm::mat4 scale = glm::scale(glm::vec3{ 0.2 });
+        glm::mat4 topNodeTranslation = glm::translate(glm::vec3{ x, yTranslationBase, 0 });
+        glm::mat4 bottomNodeTranslation = glm::translate(glm::vec3{ x, yTranslationBase - 1.5, 0 });
+
+        loadedNodes["Sphere"]->Draw(topNodeTranslation * scale, mainDrawContext);
+		
+        loadedNodes["Cube"]->Draw(bottomNodeTranslation * scale, mainDrawContext);
+    }
 
     sceneData.view = glm::translate(glm::vec3{ 0, 0, -5 });
     sceneData.proj = glm::perspective(glm::radians(70.f), (float)_windowExtent.width / (float)_windowExtent.height, 10000.f, 0.1f);
@@ -1728,7 +1662,6 @@ void VulkanEngine::update_scene() {
     sceneData.ambientColor = glm::vec4(.1f);
     sceneData.sunlightColor = glm::vec4(1.f);
     sceneData.sunlightDirection = glm::vec4(0, 1, 0.5, 1.f);
-    LOG_INFO("finishing update scene");
 }
 
 MaterialInstance GLTFMetallic_Roughness::write_material(

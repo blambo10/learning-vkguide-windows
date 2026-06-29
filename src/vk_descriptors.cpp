@@ -202,8 +202,6 @@ void DescriptorWriter::write_buffer(int binding,
 	size_t offset,
 	VkDescriptorType type) {
 
-	LOG_INFO("writing buffer to descriptor using writer");
-	
 	VkDescriptorBufferInfo& info = bufferInfos.emplace_back(
 		VkDescriptorBufferInfo{
 			.buffer = buffer,
