@@ -1,5 +1,5 @@
 ﻿//Continue here https://vkguide.dev/docs/new_chapter_5/interactive_camera/
-// start from "The matrix functions look like this"
+// start from "For rotation matrix, we are calculating 2 quaternions. One will be"
 
 //Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
 
