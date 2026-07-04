@@ -1,5 +1,4 @@
-﻿//Continue here https://vkguide.dev/docs/new_chapter_5/interactive_camera/
-// start from "For rotation matrix, we are calculating 2 quaternions. One will be"
+﻿//Continue here https://vkguide.dev/docs/new_chapter_5/gltf_nodes/
 
 //Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
 
@@ -94,6 +93,12 @@ void VulkanEngine::init()
     init_default_data();
 
     init_imgui();
+
+    mainCamera.velocity = glm::vec3(0.f);
+    mainCamera.position = glm::vec3(0, 0, 5);
+
+    mainCamera.pitch = 0;
+    mainCamera.yaw = 0;
 
     // everything went fine
     _isInitialized = true;
@@ -1365,6 +1370,7 @@ void VulkanEngine::run()
                 LOG_INFO("Key {} was pressed", e.key.keysym.sym);
             }
 
+            mainCamera.processSDLEvent(e);
             ImGui_ImplSDL2_ProcessEvent(&e);
         }
 
@@ -1638,7 +1644,10 @@ void GLTFMetallic_Roughness::build_pipelines(VulkanEngine* engine) {
 }
 
 void VulkanEngine::update_scene() {
+    mainCamera.update();
+
     mainDrawContext.OpaqueSurfaces.clear();
+    glm::mat4 view = mainCamera.getViewMatrix();
 
     loadedNodes["Suzanne"]->Draw(glm::mat4{ 1.f }, mainDrawContext);
 
@@ -1653,7 +1662,9 @@ void VulkanEngine::update_scene() {
         loadedNodes["Cube"]->Draw(bottomNodeTranslation * scale, mainDrawContext);
     }
 
-    sceneData.view = glm::translate(glm::vec3{ 0, 0, -5 });
+    //sceneData.view = glm::translate(glm::vec3{ 0, 0, -5 });
+    //sceneData.proj = glm::perspective(glm::radians(70.f), (float)_windowExtent.width / (float)_windowExtent.height, 10000.f, 0.1f);
+    sceneData.view = view;
     sceneData.proj = glm::perspective(glm::radians(70.f), (float)_windowExtent.width / (float)_windowExtent.height, 10000.f, 0.1f);
 
 	sceneData.proj[1][1] *= -1; // Invert Y for Vulkan
