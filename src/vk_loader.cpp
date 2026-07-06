@@ -251,3 +251,85 @@ std::optional<std::vector<std::shared_ptr<MeshAsset>>> loadGltfMeshes(VulkanEngi
 	return meshes;
 }
 
+std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(VulkanEngine* engine, 
+													std::filesystem::path filePath) {
+	fmt::print("LoadingGLTF: {}", filePath);
+
+	std::shared_ptr<LoadedGLTF> scene = std::make_shared<LoadedGLTF>();
+	scene->creator = engine;
+	LoadedGLTF& file = *scene.get();
+
+	fastgltf::Parser parser{};
+
+	constexpr auto gltfOptions = fastgltf::Options::DontRequireValidAssetMember | fastgltf::Options::AllowDouble | fastgltf::Options::LoadGLBBuffers | fastgltf::Options::LoadExternalBuffers;
+	// fastgltf::Options::LoadExternalImages;
+
+	fastgltf::GltfDataBuffer data;
+	data.loadFromFile(filePath);
+
+	fastgltf::Asset gltf;
+
+	std::filesystem::path path = filePath;
+
+	auto type = fastgltf::determineGltfFileType(&data);
+	if (type == fastgltf::GltfType::glTF) {
+		auto load = parser.loadGLTF(&data, path.parent_path(), gltfOptions);
+		if (load) {
+			gltf = std::move(load.get());
+		}
+		else {
+			std::cerr << "Failed to load glTF: " << fastgltf::to_underlying(load.error()) << std::endl;
+		}
+	}
+	else if (type == fastgltf::GltfType::GLB) {
+		auto load = parser.loadBinaryGLTF(&data, path.parent_path(), gltfOptions);
+		if (load) {
+			gltf = std::move(load.get());
+		}
+		else {
+			std::cerr << "Failed to load glTF: " << fastgltf::to_underlying(load.error()) << std::endl;
+			return {};
+		}
+	}
+
+	std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = { { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 } };
+
+	file.descriptorPool.init(engine->_device, gltf.materials.size(), sizes);
+
+	//TODO: continue loading samples here with new functions below
+	//"Now we can load the samplers from the glTF file."
+}
+
+VkFilter extract_filter(fastgltf::Filter filter) {
+	switch (filter) {
+		//Nearest samples
+		case fastgltf::Filter::Nearest:
+		case fastgltf::Filter::NearestMipMapNearest:
+		case fastgltf::Filter::NearestMipMapLinear:
+			return VK_FILTER_NEAREST;
+
+		//Linear samples
+		case fastgltf::Filter::Linear:
+		case fastgltf::Filter::LinearMipMapNearest:
+		case fastgltf::Filter::LinearMipMapLinear:
+		default:
+			return VK_FILTER_LINEAR;
+
+
+	}
+}
+
+VkSamplerMipmapMode extract_mipmap_mode(fastgltf::Filter filter) {
+	switch (filter) {
+		case fastgltf::Filter::NearestMipMapNearest:
+		case fastgltf::Filter::LinearMipMapNearest:
+			return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+
+		case fastgltf::Filter::NearestMipMapLinear:
+		case fastgltf::Filter::LinearMipMapLinear:
+		default:
+			return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	}	
+}
