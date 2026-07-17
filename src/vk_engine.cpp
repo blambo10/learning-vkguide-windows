@@ -1,5 +1,11 @@
 ﻿//Continue here https://vkguide.dev/docs/new_chapter_5/gltf_nodes/
-// in vk_load.cpp line 502 "The difference is that at the end, we handle the material index. If there is no material, we will default on"
+// in vk_load.cpp line 502 "Then lets try loading one. This one is included in the project, and its a big scene with 1500 meshes to"
+
+// debug line 56 on vk_loader.cpp 
+//C:\Users\blamb\repos\vulkan - guide\third_party\fmt\include\fmt\core.h(2611, 23) :
+//    2 > see reference to function template instantiation 'const Char *fmt::v10::detail::parse_format_specs<std::filesystem::path,fmt::v10::detail::compile_parse_context<Char>>(ParseContext &)' being compiled
+//    2 > with
+//    2 > [
 
 //Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
 
@@ -29,6 +35,8 @@
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
+
+//#include "vk_"
 
 #ifdef NDEBUG
 constexpr bool bUseValidationLayers = false; l - ; p;
@@ -96,7 +104,8 @@ void VulkanEngine::init()
     init_imgui();
 
     mainCamera.velocity = glm::vec3(0.f);
-    mainCamera.position = glm::vec3(0, 0, 5);
+    //mainCamera.position = glm::vec3(0, 0, 5);
+    mainCamera.position = glm::vec3(30.f, -00.f, -085.f);
 
     mainCamera.pitch = 0;
     mainCamera.yaw = 0;
@@ -664,6 +673,13 @@ void VulkanEngine::init_default_data() {
     //    destroy_buffer(rectangle.vertexBuffer);
     //    });
 
+    std::string structurePath = { "..\\..\\assets\\structure.glb" };
+    auto structureFile = loadGltf(this, structurePath);
+
+    assert(structureFile.has_value());
+
+    loadedScenes["structure"] = *structureFile;
+
     testMeshes = loadGltfMeshes(this, "..\\..\\assets\\basicmesh.glb").value();
 
     LOG_INFO("creating white image");
@@ -989,6 +1005,8 @@ void VulkanEngine::cleanup()
     if (_isInitialized) {
 
         vkDeviceWaitIdle(_device);
+
+        loadedScenes.clear();
 
 		for (int i = 0; i < _swapchainImages.size(); i++)        {
             vkDestroySemaphore(_device, _renderSemaphores[i], nullptr);
@@ -1646,6 +1664,8 @@ void GLTFMetallic_Roughness::build_pipelines(VulkanEngine* engine) {
 
 void VulkanEngine::update_scene() {
     mainCamera.update();
+
+    loadedScenes["structure"]->Draw(glm::mat4{ 1.f }, mainDrawContext);
 
     mainDrawContext.OpaqueSurfaces.clear();
     glm::mat4 view = mainCamera.getViewMatrix();

@@ -499,5 +499,73 @@ std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(VulkanEngine* engine,
 
 		newmesh->meshBuffers = engine->uploadMesh(indices, vertices);
 	}
+
+	for (fastgltf::Node& node : gltf.nodes) {
+		std::shared_ptr<Node> newNode;
+
+		if (node.meshIndex.has_value()) {
+			newNode = std::make_shared<MeshNode>();
+			static_cast<MeshNode*>(newNode.get())->mesh = meshes[*node.meshIndex];
+		}
+		else {
+			newNode = std::make_shared<Node>();
+		}
+
+		nodes.push_back(newNode);
+		file.nodes[node.name.c_str()];
+
+		std::visit(fastgltf::visitor{ [&](fastgltf::Node::TransformMatrix matrix) {
+				memcpy(&newNode->localTransform,
+					   matrix.data(),
+					sizeof(matrix));
+
+			},
+			[&](fastgltf::Node::TRS transform) {
+					glm::vec3 tl(transform.translation[0],
+								 transform.translation[1],
+								 transform.translation[2]);
+					glm::quat rot(transform.rotation[3],
+									transform.rotation[0],
+									transform.rotation[1],
+									transform.rotation[2]);
+					glm::vec3 sc(transform.scale[0],
+									transform.scale[1],
+									transform.scale[2]);
+
+					glm::mat4 tm = glm::translate(glm::mat4(1.f), tl);
+					glm::mat4 rm = glm::toMat4(rot);
+					glm::mat4 sm = glm::scale(glm::mat4(1.f), sc);
+
+					newNode->localTransform = tm * rm * sm;
+					} },
+			node.transform);
+	}
+
+	// run loop again to setup transform heirarchy
+	for (int i = 0; i < gltf.nodes.size(); i++) {
+		fastgltf::Node& node = gltf.nodes[i];
+		std::shared_ptr<Node>& sceneNode = nodes[i];
+
+		for (auto& c : node.children) {
+			sceneNode->children.push_back(nodes[c]);
+			nodes[c]->parent = sceneNode;
+		}
+	}
+
+	// find top nodes, with no parents
+	for (auto& node : nodes) {
+		if (node->parent.lock() == nullptr) {
+			file.topNodes.push_back(node);
+			node->refreshTransform(glm::mat4{ 1.f });
+		}
+	}
+
+	return scene;
 }
 
+void LoadedGLTF::Draw(const glm::mat4& topMatrix, DrawContext& ctx) {
+	// create renderables from the scenenodes
+	for (auto& n : topNodes) {
+		n->Draw(topMatrix, ctx);
+	}
+}
