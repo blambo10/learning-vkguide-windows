@@ -98,14 +98,14 @@ VkSubmitInfo2 vkinit::submit_info(
     info.pNext = nullptr;
 
     if (waitSemaphoreInfo == nullptr) {
-        LOG_INFO("signal waitSemaphoreInfo is null");
+        LOG_DEBUG("signal waitSemaphoreInfo is null");
     }
     info.waitSemaphoreInfoCount = waitSemaphoreInfo == nullptr ? 0 : 1;
     info.pWaitSemaphoreInfos = waitSemaphoreInfo;
 
    
     if (signalSemaphoreInfo == nullptr) {
-		LOG_INFO("signal semaphore is null");
+		LOG_DEBUG("signal semaphore is null");
     }
     info.signalSemaphoreInfoCount = signalSemaphoreInfo == nullptr ? 0 : 1;
     info.pSignalSemaphoreInfos = signalSemaphoreInfo;

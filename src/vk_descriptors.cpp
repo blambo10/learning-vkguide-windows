@@ -246,6 +246,14 @@ void DescriptorWriter::write_image(int binding,
 	write.descriptorCount = 1;
 	write.descriptorType = type;
 	write.pImageInfo = &info;
+	//here needs check if valid view handle for info else VK_NULL_HANDLE
+	//if (!info = nullptr) {
+	//	write.pImageInfo == VK_NULL_HANDLE;
+	//}
+	//else {
+	//	write.pImageInfo = &info;
+	//}
+	
 
 	writes.push_back(write);
 };

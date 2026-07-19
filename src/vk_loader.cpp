@@ -284,7 +284,7 @@ VkSamplerMipmapMode extract_mipmap_mode(fastgltf::Filter filter) {
 }
 
 std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(VulkanEngine* engine, 
-													std::filesystem::path filePath) {
+													std::string_view filePath) {
 	fmt::print("LoadingGLTF: {}", filePath);
 
 	std::shared_ptr<LoadedGLTF> scene = std::make_shared<LoadedGLTF>();
@@ -324,9 +324,12 @@ std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(VulkanEngine* engine,
 		}
 	}
 
+
+	//
 	std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = { { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3 },
 		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3 },
 		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 } };
+	
 
 	file.descriptorPool.init(engine->_device, gltf.materials.size(), sizes);
 
@@ -568,4 +571,84 @@ void LoadedGLTF::Draw(const glm::mat4& topMatrix, DrawContext& ctx) {
 	for (auto& n : topNodes) {
 		n->Draw(topMatrix, ctx);
 	}
+}
+
+void LoadedGLTF::clearAll() {
+	LOG_INFO("Clearing GLTF method place holder");
+}
+
+std::optional<AllocatedImage> load_image(VulkanEngine* engine, fastgltf::Asset& asset, fastglft::Image& image) {
+	AllocatedImage newImage{};
+
+	int width, height, nrChannels;
+
+	std::visit(
+		fastgltf::visitor{
+			[](auto& arg) {},
+			[&](fastgltf::sources::URI& filePath) {
+				assert(filePath.fileByteOffset == 0);
+				assert(filePath.uri.isLocalPath());
+
+				const std::string path(filePath.uri.path().begin(),
+					filePath.uri.path().end());
+
+				unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
+				if (data) {
+					VkExtent3D imagesize;
+					imagesize.width = width;
+					imagesize.height = height;
+					imagesize.depth = 1;
+
+					newImage = engine->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+
+					stbi_image_free(data);
+				}
+			}
+		},
+		[&](fastgltf::sources::Vector& vector) {
+			unsigned char* data = stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()),
+				&width, &height, &nrChannels, 4);
+			if (data) {
+				VkExtent3D imagesize;
+				imagesize.width = width;
+				imagesize.height = height;
+				imagesize.depth = 1;
+
+				newImage = engine->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+
+				stbi_image_free(data);
+			}
+		},
+		[&](fastgltf::sources::BufferView& view) {
+			auto& bufferView = asset.bufferViews[view.bufferViewIndex];
+			auto& buffer = asset.buffers[bufferView.bufferIndex];
+
+			std::visit(fastgltf::visitor{
+					[](auto& arg) {},
+					[&](fastgltf::sources::Vector& vecotr) {
+					unsigned char* data = stbi_load_from_memory(vector.bytes.data() + bufferView.byteOffset,
+						static_cast<int>(bufferView.byteLength),
+						&width, &height, &nrChannels, 4);
+					if (data) {
+						VkExtent3D imagesize;
+						imagesize.width = width;
+						imagesize.height = height;
+						imagesize.depth = 1;
+
+						newImage = engine->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
+							VK_IMAGE_USAGE_SAMPLED_BIT, false);
+					}
+				} },
+				buffer.data);
+
+		},
+		image.data);
+
+	if (newImage.image == VK_NULL_HANDLE) {
+		return {};
+	}
+	else {
+		return newImage;
+	}
+	
 }

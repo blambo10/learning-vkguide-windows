@@ -15,7 +15,9 @@ public:
 
         switch (level) {
         case LogLevel::DEBUG:
-            fmt::println("[DEBUG] {}", msg); break;
+            #ifndef NDEBUG
+                fmt::println("[DEBUG] {}", msg); break;
+            #endif      
         case LogLevel::INFO:
             fmt::print(fmt::fg(fmt::color::green), "[INFO]  {} \n", msg); break;
         case LogLevel::WARN:

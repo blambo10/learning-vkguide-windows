@@ -264,17 +264,18 @@ private:
 	void resize_swapchain();
 	void destroy_swapchain();
 	void destroy_buffer(const AllocatedBuffer& buffer);
-	AllocatedImage create_image(
-		VkExtent3D size, 
-		VkFormat format, 
-		VkImageUsageFlags usage, 
-		bool mipmapped = false);
-	AllocatedImage create_image(
-		void* data, 
-		VkExtent3D size, 
-		VkFormat format, 
-		VkImageUsageFlags usage, 
-		bool mipmapped = false);
 	void destroy_image(const AllocatedImage& img);
 	void update_scene();
+public:
+	AllocatedImage create_image(
+		VkExtent3D size,
+		VkFormat format,
+		VkImageUsageFlags usage,
+		bool mipmapped = false);
+	AllocatedImage create_image(
+		void* data,
+		VkExtent3D size,
+		VkFormat format,
+		VkImageUsageFlags usage,
+		bool mipmapped = false);
 };

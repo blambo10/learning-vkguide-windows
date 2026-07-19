@@ -1,11 +1,5 @@
-﻿//Continue here https://vkguide.dev/docs/new_chapter_5/gltf_nodes/
-// in vk_load.cpp line 502 "Then lets try loading one. This one is included in the project, and its a big scene with 1500 meshes to"
-
-// debug line 56 on vk_loader.cpp 
-//C:\Users\blamb\repos\vulkan - guide\third_party\fmt\include\fmt\core.h(2611, 23) :
-//    2 > see reference to function template instantiation 'const Char *fmt::v10::detail::parse_format_specs<std::filesystem::path,fmt::v10::detail::compile_parse_context<Char>>(ParseContext &)' being compiled
-//    2 > with
-//    2 > [
+﻿//Continue here https://vkguide.dev/docs/new_chapter_5/gltf_textures/
+// "Long function, but its really just 3 versions of the same thing."
 
 //Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
 
@@ -39,7 +33,7 @@
 //#include "vk_"
 
 #ifdef NDEBUG
-constexpr bool bUseValidationLayers = false; l - ; p;
+constexpr bool bUseValidationLayers = false; 
 #else
 constexpr bool bUseValidationLayers = true;
 #endif
@@ -673,13 +667,8 @@ void VulkanEngine::init_default_data() {
     //    destroy_buffer(rectangle.vertexBuffer);
     //    });
 
+
     std::string structurePath = { "..\\..\\assets\\structure.glb" };
-    auto structureFile = loadGltf(this, structurePath);
-
-    assert(structureFile.has_value());
-
-    loadedScenes["structure"] = *structureFile;
-
     testMeshes = loadGltfMeshes(this, "..\\..\\assets\\basicmesh.glb").value();
 
     LOG_INFO("creating white image");
@@ -819,6 +808,15 @@ void VulkanEngine::init_default_data() {
     }
 
     LOG_INFO("finished loading test meshes");
+
+    // loading scene
+
+    auto structureFile = loadGltf(this, structurePath);
+
+    assert(structureFile.has_value());
+
+    loadedScenes["structure"] = *structureFile;
+
 
     _mainDeletionQueue.push_function([&]() {
         vkDestroySampler(
@@ -1702,7 +1700,7 @@ MaterialInstance GLTFMetallic_Roughness::write_material(
     const MaterialResources& resources,
     DescriptorAllocatorGrowable& descriptorAllocator) {
 
-    LOG_INFO("begin writing material");
+    //LOG_INFO("begin writing material");
     MaterialInstance matData;
     if (pass == MaterialPass::Transparent) {
         matData.pipeline = &transparentPipeline;
@@ -1711,11 +1709,12 @@ MaterialInstance GLTFMetallic_Roughness::write_material(
         matData.pipeline = &opaquePipeline;
     }
 
-    LOG_INFO("begin material set allocation");
+    //LOG_INFO("begin material set allocation");
     //todo: materialLayout isnt initialised and needs to be before calling this,
     //      continue debugging from here.
     matData.materialSet = descriptorAllocator.allocate(device, materialLayout);
-    LOG_INFO("finish writing material");
+    //LOG_INFO("finish writing material");
+    
     
     writer.clear();
     writer.write_buffer(
@@ -1726,6 +1725,7 @@ MaterialInstance GLTFMetallic_Roughness::write_material(
         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
     );
     
+    //LOG_INFO("writing images");
     writer.write_image(
         1,
         resources.colorImage.imageView,
@@ -1742,7 +1742,10 @@ MaterialInstance GLTFMetallic_Roughness::write_material(
         VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
     );
 
+    //LOG_INFO("updating sets");
     writer.update_set(device, matData.materialSet);
+
+	LOG_INFO("finished writing images");
 
     return matData;
 }
