@@ -2,6 +2,8 @@
 #include <vk_initializers.h>
 #include <fmt/core.h>
 #include <vk_logging.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 void vkutil::transition_image(
 	VkCommandBuffer cmd,

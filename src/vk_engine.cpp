@@ -1,5 +1,10 @@
 ﻿//Continue here https://vkguide.dev/docs/new_chapter_5/gltf_textures/
-// "Long function, but its really just 3 versions of the same thing."
+
+
+// continue at "Transparent objects" 
+// Note finish this chapter and then check to see if the images are binding to the rendered objects or not as per the part in this chapter that suggests it,
+// if not debug why, it might be the transparency you tweaked early on as per line below.
+// this is the part that tells you it binds "If you try to run the project again now, you will see we have textures on the objects."
 
 //Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
 
@@ -26,7 +31,7 @@
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
-#include "imgui.h"
+#include "imgui.h"  
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
 

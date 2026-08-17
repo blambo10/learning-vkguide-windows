@@ -263,8 +263,8 @@ private:
 	void create_swapchain(uint32_t width, uint32_t height);
 	void resize_swapchain();
 	void destroy_swapchain();
-	void destroy_buffer(const AllocatedBuffer& buffer);
-	void destroy_image(const AllocatedImage& img);
+
+
 	void update_scene();
 public:
 	AllocatedImage create_image(
@@ -278,4 +278,6 @@ public:
 		VkFormat format,
 		VkImageUsageFlags usage,
 		bool mipmapped = false);
+	void destroy_buffer(const AllocatedBuffer& buffer);
+	void destroy_image(const AllocatedImage& img);
 };

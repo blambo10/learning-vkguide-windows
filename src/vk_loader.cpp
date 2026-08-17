@@ -359,8 +359,22 @@ std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(VulkanEngine* engine,
 
 	//load all textures
 	for (fastgltf::Image& image : gltf.images) {
+		std::optional<AllocatedImage> img = load_image(engine, gltf, image);
+
+		if (img.has_value()) {
+			images.push_back(*img);
+			file.images[image.name.c_str()] = *img;
+		}
+		else {
+			//load default texture if desired texture failed to load
+			images.push_back(engine->_errorCheckerboardImage);
+			LOG_INFO("gltf failed to load textures {}", image.name);
+		}
+
 		images.push_back(engine->_errorCheckerboardImage);
 	}
+
+	LOG_INFO("checking images loaded: {}", images.size());
 
 	//create buffer to hold the material data
 	file.materialDataBuffer = engine->create_buffer(sizeof(GLTFMetallic_Roughness::MaterialConstants) * gltf.materials.size(),
@@ -574,10 +588,29 @@ void LoadedGLTF::Draw(const glm::mat4& topMatrix, DrawContext& ctx) {
 }
 
 void LoadedGLTF::clearAll() {
-	LOG_INFO("Clearing GLTF method place holder");
+	VkDevice dv = creator->_device;
+
+	descriptorPool.destroy_pools(dv);
+	creator->destroy_buffer(materialDataBuffer);
+
+	for (auto& [k, v] : meshes) {
+		creator->destroy_buffer(v->meshBuffers.indexBuffer);
+		creator->destroy_buffer(v->meshBuffers.vertexBuffer);
+	}
+
+	for (auto& [k, v] : images) {
+		if (v.image == creator->_errorCheckerboardImage.image) {
+			continue;
+		}
+		creator->destroy_image(v);
+	}
+
+	for (auto& sampler : samplers) {
+		vkDestroySampler(dv, sampler, nullptr);
+	}
 }
 
-std::optional<AllocatedImage> load_image(VulkanEngine* engine, fastgltf::Asset& asset, fastglft::Image& image) {
+std::optional<AllocatedImage> load_image(VulkanEngine* engine, fastgltf::Asset& asset, fastgltf::Image& image) {
 	AllocatedImage newImage{};
 
 	int width, height, nrChannels;
@@ -603,44 +636,44 @@ std::optional<AllocatedImage> load_image(VulkanEngine* engine, fastgltf::Asset& 
 
 					stbi_image_free(data);
 				}
-			}
-		},
-		[&](fastgltf::sources::Vector& vector) {
-			unsigned char* data = stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()),
-				&width, &height, &nrChannels, 4);
-			if (data) {
-				VkExtent3D imagesize;
-				imagesize.width = width;
-				imagesize.height = height;
-				imagesize.depth = 1;
+			},
+			[&](fastgltf::sources::Vector& vector) {
+				unsigned char* data = stbi_load_from_memory(vector.bytes.data(), static_cast<int>(vector.bytes.size()),
+					&width, &height, &nrChannels, 4);
+				if (data) {
+					VkExtent3D imagesize;
+					imagesize.width = width;
+					imagesize.height = height;
+					imagesize.depth = 1;
 
-				newImage = engine->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
+					newImage = engine->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, false);
 
-				stbi_image_free(data);
-			}
-		},
-		[&](fastgltf::sources::BufferView& view) {
-			auto& bufferView = asset.bufferViews[view.bufferViewIndex];
-			auto& buffer = asset.buffers[bufferView.bufferIndex];
+					stbi_image_free(data);
+				}
+			},
+			[&](fastgltf::sources::BufferView& view) {
+				auto& bufferView = asset.bufferViews[view.bufferViewIndex];
+				auto& buffer = asset.buffers[bufferView.bufferIndex];
 
-			std::visit(fastgltf::visitor{
-					[](auto& arg) {},
-					[&](fastgltf::sources::Vector& vecotr) {
-					unsigned char* data = stbi_load_from_memory(vector.bytes.data() + bufferView.byteOffset,
-						static_cast<int>(bufferView.byteLength),
-						&width, &height, &nrChannels, 4);
-					if (data) {
-						VkExtent3D imagesize;
-						imagesize.width = width;
-						imagesize.height = height;
-						imagesize.depth = 1;
+				std::visit(fastgltf::visitor{
+						[](auto& arg) {},
+						[&](fastgltf::sources::Vector& vector) {
+						unsigned char* data = stbi_load_from_memory(vector.bytes.data() + bufferView.byteOffset,
+							static_cast<int>(bufferView.byteLength),
+							&width, &height, &nrChannels, 4);
+						if (data) {
+							VkExtent3D imagesize;
+							imagesize.width = width;
+							imagesize.height = height;
+							imagesize.depth = 1;
 
-						newImage = engine->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
-							VK_IMAGE_USAGE_SAMPLED_BIT, false);
-					}
-				} },
-				buffer.data);
+							newImage = engine->create_image(data, imagesize, VK_FORMAT_R8G8B8A8_UNORM,
+								VK_IMAGE_USAGE_SAMPLED_BIT, false);
+						}
+					} },
+					buffer.data);
 
+			},
 		},
 		image.data);
 
