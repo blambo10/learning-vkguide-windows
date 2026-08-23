@@ -97,16 +97,18 @@ VkSubmitInfo2 vkinit::submit_info(
     info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
     info.pNext = nullptr;
 
-    if (waitSemaphoreInfo == nullptr) {
-        LOG_DEBUG("signal waitSemaphoreInfo is null");
-    }
+    //TODO: figure out how to only output this when debugging, might have to switch to release when not debugging in the IDE
+    //if (waitSemaphoreInfo == nullptr) {
+    //    LOG_DEBUG("signal waitSemaphoreInfo is null");
+    //}
     info.waitSemaphoreInfoCount = waitSemaphoreInfo == nullptr ? 0 : 1;
     info.pWaitSemaphoreInfos = waitSemaphoreInfo;
 
    
-    if (signalSemaphoreInfo == nullptr) {
-		LOG_DEBUG("signal semaphore is null");
-    }
+  //TODO: figure out how to only output this when debugging, might have to switch to release when not debugging in the IDE
+  //  if (signalSemaphoreInfo == nullptr) {
+		//LOG_DEBUG("signal semaphore is null");
+  //  }
     info.signalSemaphoreInfoCount = signalSemaphoreInfo == nullptr ? 0 : 1;
     info.pSignalSemaphoreInfos = signalSemaphoreInfo;
 

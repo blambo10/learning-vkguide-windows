@@ -1,10 +1,12 @@
-﻿//Continue here https://vkguide.dev/docs/new_chapter_5/gltf_textures/
+﻿//You've finished the tutorial and have a game engine, you need to debug why textures arent binding to models
+//Continue here https://vkguide.dev/docs/new_chapter_5/faster_draw/
 
-
-// continue at "Transparent objects" 
-// Note finish this chapter and then check to see if the images are binding to the rendered objects or not as per the part in this chapter that suggests it,
-// if not debug why, it might be the transparency you tweaked early on as per line below.
-// this is the part that tells you it binds "If you try to run the project again now, you will see we have textures on the objects."
+// Note: you noticed you still have legacy loadGTLFMeshes in use and duplicates of code,
+// you have commented out the legacy code and now facing 
+// vkUpdateDescriptorSets(): pDescriptorWrites[2].pImageInfo[0].sampler found in the template update has an invalid VkSampler 0xcccccccccccccccc (while trying to update a descriptorType of VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER).
+// The Vulkan spec states : If descriptorType is VK_DESCRIPTOR_TYPE_SAMPLER or VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, and dstSet was not allocated with a layout that included immutable samplers for dstBinding with descriptorType, the sampler member of each element of pImageInfo must be a valid VkSampler object(https ://docs.vulkan.org/spec/latest/chapters/descriptorsets.html#VUID-VkWriteDescriptorSet-descriptorType-00325)
+// 
+// Continue debugging at 328
 
 //Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
 
@@ -674,7 +676,7 @@ void VulkanEngine::init_default_data() {
 
 
     std::string structurePath = { "..\\..\\assets\\structure.glb" };
-    testMeshes = loadGltfMeshes(this, "..\\..\\assets\\basicmesh.glb").value();
+    //testMeshes = loadGltfMeshes(this, "..\\..\\assets\\basicmesh.glb").value();
 
     LOG_INFO("creating white image");
 
@@ -706,14 +708,6 @@ void VulkanEngine::init_default_data() {
 
     LOG_INFO("black image created, now creating checkerboard image");
 
-    //uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
-    //std::array<uint32_t, 16 * 16> pixels;
-    //for (int x = 0; x < 16; x++) {
-    //    for (int y = 0; y < 16; y++) {
-    //        pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta : black;
-    //    }
-    //}
-
     uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
     std::array<uint32_t, 16 * 16 > pixels; //for 16x16 checkerboard texture
     for (int x = 0; x < 16; x++) {
@@ -734,85 +728,89 @@ void VulkanEngine::init_default_data() {
 
     LOG_INFO("Finished copying checkerboard error image from buffer to image");
 
-    VkSamplerCreateInfo sampl = {
-        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO
-    };
+    //todo:
+    //Comment from here
+ //   VkSamplerCreateInfo sampl = {
+ //       .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO
+ //   };
 
-	sampl.magFilter = VK_FILTER_NEAREST;
-	sampl.minFilter = VK_FILTER_NEAREST;
-    
-    LOG_INFO("Creating sample");
-    vkCreateSampler(
-        _device,
-        &sampl,
-        nullptr,
-        &_defaultSamplerNearest
-    );
-    LOG_INFO("finished creating sample");
+	//sampl.magFilter = VK_FILTER_NEAREST;
+	//sampl.minFilter = VK_FILTER_NEAREST;
+ //   
+ //   LOG_INFO("Creating sample");
+ //   vkCreateSampler(
+ //       _device,
+ //       &sampl,
+ //       nullptr,
+ //       &_defaultSamplerNearest
+ //   );
+ //   LOG_INFO("finished creating sample");
 
-    sampl.magFilter = VK_FILTER_LINEAR;
-	sampl.minFilter = VK_FILTER_LINEAR;
+ //   sampl.magFilter = VK_FILTER_LINEAR;
+	//sampl.minFilter = VK_FILTER_LINEAR;
 
-    vkCreateSampler(
-        _device,
-        &sampl,
-        nullptr,
-        &_defaultSamplerLinear
-    );
+ //   vkCreateSampler(
+ //       _device,
+ //       &sampl,
+ //       nullptr,
+ //       &_defaultSamplerLinear
+ //   );
 
-    GLTFMetallic_Roughness::MaterialResources materialResources;
+ //   GLTFMetallic_Roughness::MaterialResources materialResources;
 
-    materialResources.colorImage = _whiteImage;
-    materialResources.colorSampler = _defaultSamplerLinear;
-    materialResources.metalRoughImage = _whiteImage;
-    materialResources.metalRoughSampler = _defaultSamplerLinear;
+ //   materialResources.colorImage = _whiteImage;
+ //   materialResources.colorSampler = _defaultSamplerLinear;
+ //   materialResources.metalRoughImage = _whiteImage;
+ //   materialResources.metalRoughSampler = _defaultSamplerLinear;
 
-    AllocatedBuffer materialConstants = create_buffer(
-        sizeof(GLTFMetallic_Roughness::MaterialConstants),
-        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-        VMA_MEMORY_USAGE_CPU_TO_GPU
-    );
+ //   AllocatedBuffer materialConstants = create_buffer(
+ //       sizeof(GLTFMetallic_Roughness::MaterialConstants),
+ //       VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+ //       VMA_MEMORY_USAGE_CPU_TO_GPU
+ //   );
 
-    GLTFMetallic_Roughness::MaterialConstants* sceneUniformData =
-        (GLTFMetallic_Roughness::MaterialConstants*)materialConstants.allocation->GetMappedData();
-    sceneUniformData->colorFactors = glm::vec4{ 1,1,1,1 };
-    sceneUniformData->metal_rough_factors = glm::vec4{ 1,0.5,0,0 };
+ //   GLTFMetallic_Roughness::MaterialConstants* sceneUniformData =
+ //       (GLTFMetallic_Roughness::MaterialConstants*)materialConstants.allocation->GetMappedData();
+ //   sceneUniformData->colorFactors = glm::vec4{ 1,1,1,1 };
+ //   sceneUniformData->metal_rough_factors = glm::vec4{ 1,0.5,0,0 };
 
-    _mainDeletionQueue.push_function([=, this]() {
-        destroy_buffer(materialConstants);
-    });
+ //   _mainDeletionQueue.push_function([=, this]() {
+ //       destroy_buffer(materialConstants);
+ //   });
 
-    materialResources.dataBuffer = materialConstants.buffer;
-    materialResources.dataBufferOffset = 0;
+ //   materialResources.dataBuffer = materialConstants.buffer;
+ //   materialResources.dataBufferOffset = 0;
 
-	LOG_INFO("creating material resource");
-    
-    //todo: continue debugging from here, issue with 
-    //vkAllocateDescriptorSets(): pAllocateInfo->pSetLayouts[0] Invalid VkDescriptorSetLayout Object
-    defaultData = metalRoughMaterial.write_material(
-        _device,
-        MaterialPass::MainColor,
-        materialResources,
-        globalDescriptorAllocator
-    );
+	//LOG_INFO("creating material resource");
+ //   
+ //   //todo: continue debugging from here, issue with 
+ //   //vkAllocateDescriptorSets(): pAllocateInfo->pSetLayouts[0] Invalid VkDescriptorSetLayout Object
+ //   defaultData = metalRoughMaterial.write_material(
+ //       _device,
+ //       MaterialPass::MainColor,
+ //       materialResources,
+ //       globalDescriptorAllocator
+ //   );
+
+    //commented finished
 
     LOG_INFO("finished creating material resource");
 
-    for (auto& m : testMeshes) {
-        std::shared_ptr<MeshNode> newNode = std::make_shared<MeshNode>();
-        newNode->mesh = m;
+    //for (auto& m : testMeshes) {
+    //    std::shared_ptr<MeshNode> newNode = std::make_shared<MeshNode>();
+    //    newNode->mesh = m;
 
-        newNode->localTransform = glm::mat4{ 1.f };
-        newNode->worldTransform = glm::mat4{ 1.f };
+    //    newNode->localTransform = glm::mat4{ 1.f };
+    //    newNode->worldTransform = glm::mat4{ 1.f };
 
-        for (auto& s : newNode->mesh->surfaces) {
-            s.material = std::make_shared<GLTFMaterial>(defaultData);
-        }
+    //    for (auto& s : newNode->mesh->surfaces) {
+    //        s.material = std::make_shared<GLTFMaterial>(defaultData);
+    //    }
 
-        loadedNodes[m->name] = std::move(newNode);
-    }
+    //    loadedNodes[m->name] = std::move(newNode);
+    //}
 
-    LOG_INFO("finished loading test meshes");
+    //LOG_INFO("finished loading test meshes");
 
     // loading scene
 
@@ -824,16 +822,16 @@ void VulkanEngine::init_default_data() {
 
 
     _mainDeletionQueue.push_function([&]() {
-        vkDestroySampler(
-            _device,
-            _defaultSamplerNearest,
-            nullptr
-        );
-        vkDestroySampler(
-            _device,
-            _defaultSamplerLinear,
-            nullptr
-        );
+        //vkDestroySampler(
+        //    _device,
+        //    _defaultSamplerNearest,
+        //    nullptr
+        //);
+        //vkDestroySampler(
+        //    _device,
+        //    _defaultSamplerLinear,
+        //    nullptr
+        //);
 
         destroy_image(_whiteImage);
         destroy_image(_greyImage);
@@ -1312,7 +1310,7 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
         _singleImageDescriptorLayout
     );
 
-    for (const RenderObject& draw : mainDrawContext.OpaqueSurfaces) {
+    auto draw = [&](const RenderObject& draw) {
         vkCmdBindPipeline(cmd,
             VK_PIPELINE_BIND_POINT_GRAPHICS,
             draw.material->pipeline->pipeline
@@ -1321,7 +1319,7 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
         vkCmdBindDescriptorSets(cmd,
             VK_PIPELINE_BIND_POINT_GRAPHICS,
             draw.material->pipeline->layout,
-            0,1,
+            0, 1,
             &globalDescriptor,
             0,
             nullptr
@@ -1351,9 +1349,20 @@ void VulkanEngine::draw_geometry(VkCommandBuffer cmd) {
             sizeof(GPUDrawPushConstants),
             &pushConstants
         );
-        
+
         vkCmdDrawIndexed(cmd, draw.indexCount, 1, draw.firstIndex, 0, 0);
-    }
+    };
+
+    for (auto& r : mainDrawContext.OpaqueSurfaces) {
+        draw(r);
+    };
+
+    for (auto& r : mainDrawContext.TransparentSurfaces) {
+        draw(r);
+    };
+
+    mainDrawContext.OpaqueSurfaces.clear();
+    mainDrawContext.TransparentSurfaces.clear();
 
     vkCmdEndRendering(cmd);
 }

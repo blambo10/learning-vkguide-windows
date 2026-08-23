@@ -325,7 +325,7 @@ std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(VulkanEngine* engine,
 	}
 
 
-	//
+	//todo: continue debugging here
 	std::vector<DescriptorAllocatorGrowable::PoolSizeRatio> sizes = { { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3 },
 		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3 },
 		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 } };
@@ -362,8 +362,10 @@ std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(VulkanEngine* engine,
 		std::optional<AllocatedImage> img = load_image(engine, gltf, image);
 
 		if (img.has_value()) {
+			
 			images.push_back(*img);
 			file.images[image.name.c_str()] = *img;
+			LOG_INFO("Loaded image: {}", image.name);
 		}
 		else {
 			//load default texture if desired texture failed to load
@@ -371,7 +373,6 @@ std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(VulkanEngine* engine,
 			LOG_INFO("gltf failed to load textures {}", image.name);
 		}
 
-		images.push_back(engine->_errorCheckerboardImage);
 	}
 
 	LOG_INFO("checking images loaded: {}", images.size());
