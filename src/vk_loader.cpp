@@ -352,6 +352,8 @@ std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(VulkanEngine* engine,
 			file.samplers.push_back(newSampler);
 	};
 
+	LOG_INFO("Loaded samplers");
+
 	std::vector<std::shared_ptr<MeshAsset>> meshes;
 	std::vector<std::shared_ptr<Node>> nodes;
 	std::vector<AllocatedImage> images;
@@ -380,8 +382,12 @@ std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(VulkanEngine* engine,
 	//create buffer to hold the material data
 	file.materialDataBuffer = engine->create_buffer(sizeof(GLTFMetallic_Roughness::MaterialConstants) * gltf.materials.size(),
 		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+	
 	int data_index = 0;
 	GLTFMetallic_Roughness::MaterialConstants* sceneMaterialConstants = (GLTFMetallic_Roughness::MaterialConstants*)file.materialDataBuffer.info.pMappedData;
+
+	LOG_INFO("Created material buffer for {} materials", gltf.materials.size());
+
 
 	for (fastgltf::Material& mat : gltf.materials) {
 		std::shared_ptr<GLTFMaterial> newMat = std::make_shared<GLTFMaterial>();
@@ -420,13 +426,18 @@ std::optional<std::shared_ptr<LoadedGLTF>> loadGltf(VulkanEngine* engine,
 			size_t sampler = gltf.textures[mat.pbrData.baseColorTexture.value().textureIndex].samplerIndex.value();
 
 			materialResources.colorImage = images[img];
+			LOG_INFO("Loaded color image for material: {}", mat.name);
 			materialResources.colorSampler = file.samplers[sampler];
+			LOG_INFO("Loaded color sampler for material: {}", mat.name);
 		}
 
+		//Todo: issue occures when writing material likely from something previous
 		newMat->data = engine->metalRoughMaterial.write_material(engine->_device, passType, materialResources, file.descriptorPool);
 
 		data_index++;
 	}
+
+	LOG_INFO("Loaded materials");
 
 	std::vector<uint32_t> indices;
 	std::vector<Vertex> vertices;

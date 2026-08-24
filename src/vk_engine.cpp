@@ -6,7 +6,7 @@
 // vkUpdateDescriptorSets(): pDescriptorWrites[2].pImageInfo[0].sampler found in the template update has an invalid VkSampler 0xcccccccccccccccc (while trying to update a descriptorType of VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER).
 // The Vulkan spec states : If descriptorType is VK_DESCRIPTOR_TYPE_SAMPLER or VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, and dstSet was not allocated with a layout that included immutable samplers for dstBinding with descriptorType, the sampler member of each element of pImageInfo must be a valid VkSampler object(https ://docs.vulkan.org/spec/latest/chapters/descriptorsets.html#VUID-VkWriteDescriptorSet-descriptorType-00325)
 // 
-// Continue debugging at 328
+// Continue debugging at 435 on vk_loader.cpp
 
 //Note: to modify the monkey head transparency, update the vec4 opactiry field in the fragment shader at coloured_triangle.frag, then rerun the shader compile..bat
 
